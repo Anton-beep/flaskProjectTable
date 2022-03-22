@@ -1,11 +1,20 @@
 from flask import Flask
+from flask_restful import Api
 
 from data.sqlalchemy import db_session
+from data.API_resources import users_resources
 
 import init
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
+
+db_session.global_init('db/timetable.db')
+
+api = Api(app)
+
+api.add_resource(users_resources.UserListResource, '/api/users')
+api.add_resource(users_resources.UsersResource, '/api/users/<int:users_id>')
 
 
 def main():
