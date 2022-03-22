@@ -1,5 +1,6 @@
-from flask import Flask, redirect, render_template
+from flask import Flask, redirect, render_template, request
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
+from flask_restful import abort
 
 from data.sqlalchemy import db_session
 from data.models.users import User
@@ -94,7 +95,7 @@ def register(token):
                                form=form)
     form.token.data = user.token
     form.grade.data = user.grade
-    form.access_level.choices = [user.access_level]
+    form.access_level.choices = [(user.access_level, user.access_level)]
     form.surname.data = user.surname
     form.name.data = user.name
     form.patronymic.data = user.patronymic
@@ -115,6 +116,60 @@ def register(token):
         db_sess.commit()
         return redirect(f'/login/{user.token}')
     return render_template('register.html', title='Регистрация', form=form)
+
+
+@app.route('/user_edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def user_edit(id):
+    form = RegisterForm()
+    level = 0
+    if request.method == "GET":
+        db_sess = db_session.create_session()
+        if current_user.id == 1:
+            user = db_sess.query(User).filter(User.id == id).first()
+            form.access_level.choices = [(1, 1), (2, 2), (3, 3)]
+            form.access_level.data = user.access_level
+            level = 1
+        else:
+            user = db_sess.query(User).filter(User.id == current_user.id).first()
+            form.access_level.choices = [user.access_level]
+            level = 0
+
+        if user:
+            form.name.data = user.name
+            form.surname.data = user.surname
+            form.patronymic.data = user.patronymic
+            form.grade.data = user.grade
+            form.email.data = user.email
+            form.token.data = user.token
+        else:
+            abort(404)
+
+    if form.validate_on_submit():
+        if form.password.data != form.password_again.data:
+            return render_template('register.html', title='Редактирование профиля',
+                                   form=form,
+                                   message="Пароли не совпадают")
+        db_sess = db_session.create_session()
+        if current_user.id == 1:
+            user = db_sess.query(User).filter(User.id == id).first()
+            user.access_level = form.access_level.data
+        else:
+            user = db_sess.query(User).filter(User.id == current_user.id).first()
+
+        if user:
+            user.name = form.name.data
+            user.surname = form.surname.data
+            user.patronymic = form.patronymic.data
+            user.grade = form.grade.data
+            user.email = form.email.data
+            user.token = form.token.data
+            user.set_password(form.password.data)
+            db_sess.commit()
+            return redirect('/')
+        else:
+            abort(404)
+    return render_template('register.html', title='Редактирование профиля', form=form, level=level)
 
 
 if __name__ == '__main__':
