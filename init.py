@@ -49,8 +49,8 @@ def add_users(flag):
     user = User()
     user.surname, user.name, user.patronymic = 'Лебедев', 'Федор', 'Михайлович'
     user.grade = '9Ф'
-    user.email = 'dr_pepper228@clown.py'
-    user.set_password('bib')
+    # user.email = 'dr_pepper228@clown.py'
+    # user.set_password('bib')
     user.access_level = 1
     user.token = 'student1'  # Надо изменить
     db_sess.add(user)
