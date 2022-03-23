@@ -1,8 +1,12 @@
+import datetime
+
 from flask import Flask, redirect, render_template
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 
 from data.sqlalchemy import db_session
 from data.models.users import User
+from data.models.lessons import Lesson
+from data.models.replacements import Replacement
 
 from forms.login import LoginForm
 from forms.register import RegisterForm
@@ -22,14 +26,111 @@ def main():
 
     db_session.global_init("db/timetable.db")
 
-    init.fill_table(admin=True, users=True, lessons=False, replacements=False)
+    init.fill_table(admin=True, users=True, lessons=True, replacements=True)
 
     app.run()
 
 
 @app.route('/')
 def base():
-    return render_template("index.html")
+    param = {}
+    file = "show_user.html"
+    if current_user.is_authenticated:
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter(User.id == current_user.id).first()
+
+        if user.access_level == 1:
+            param = param_for_user()
+            file = "show_user.html"
+        elif user.access_level == 2:
+            param = param_for_teacher()
+            file = "show_teacher.html"
+        elif user.access_level == 3:
+            param = param_for_admin()
+            file = "show_admin.html"
+        print(param)
+    return render_template(file, **param)
+
+
+def param_for_user():
+    db_sess = db_session.create_session()
+    grade = db_sess.query(User).filter(User.id == current_user.id).first().grade
+    title = grade
+    lessons = []
+    for item in db_sess.query(Lesson).filter(Lesson.grade == grade).all():
+        lesson = item.to_dict()
+        lesson['duration'] = (item.end_date - item.start_date).seconds // 60
+        teacher = db_sess.query(User).filter(User.id == item.teacher).first()
+        lesson['teacher'] = ' '.join([teacher.surname, teacher.name, teacher.patronymic])
+
+        lessons.append(lesson)
+
+    replacements = {}
+    for item in db_sess.query(Replacement).filter(Replacement.grade == grade).all():
+        replacement = item.to_dict()
+        replacement['duration'] = (item.end_date - item.start_date).seconds // 60
+        teacher = db_sess.query(User).filter(User.id == item.teacher).first()
+        replacement['teacher'] = ' '.join([teacher.surname, teacher.name, teacher.patronymic])
+
+        replacements[item.lesson] = replacement
+    return {"lessons": lessons, "rep": replacements, "title": title}
+
+
+def param_for_teacher():
+    db_sess = db_session.create_session()
+    user = db_sess.query(User).filter(User.id == current_user.id).first()
+    title = ' '.join([user.surname, user.name, user.patronymic])
+    list_of_id = []
+
+    lessons = []
+    for item in db_sess.query(Lesson).filter(Lesson.teacher == user.id).all():
+        lesson = item.to_dict()
+        lesson['duration'] = (item.end_date - item.start_date).seconds // 60
+        list_of_id.append(item.id)
+
+        lessons.append(lesson)
+
+    replacements = []
+    for item in db_sess.query(Replacement).filter(Replacement.teacher == user.id).all():
+        replacement = item.to_dict()
+        replacement['duration'] = (item.end_date - item.start_date).seconds // 60
+        replacement['old_topic'] = db_sess.query(Lesson).filter(Lesson.id == item.lesson).first().topic
+
+        replacements.append(replacement)
+
+    replaced = {}
+    for item in db_sess.query(Replacement).filter(Replacement.lesson.in_(list_of_id)).all():
+        rep = item.to_dict()
+        rep['duration'] = (item.end_date - item.start_date).seconds // 60
+        teacher = db_sess.query(User).filter(User.id == item.teacher).first()
+        rep['teacher'] = ' '.join([teacher.surname, teacher.name, teacher.patronymic])
+
+        replaced[item.lesson] = rep
+
+    return {"lessons": lessons, "rep": replacements, "title": title, "replaced": replaced}
+
+
+def param_for_admin():
+    title = 'всех учеников и учитилей'
+    db_sess = db_session.create_session()
+    lessons = []
+    for lesson in db_sess.query(Lesson).all():
+        les = lesson.to_dict()
+        teacher = db_sess.query(User).filter(User.id == lesson.teacher).first()
+        les["teacher_name"] = ' '.join([teacher.surname, teacher.name, teacher.patronymic])
+        les["duration"] = (lesson.end_date - lesson.start_date).seconds // 60
+
+        lessons.append(les)
+
+    replacements = {}
+    for rep in db_sess.query(Replacement).all():
+        replacements[rep.lesson] = rep.to_dict()
+        teacher = db_sess.query(User).filter(User.id == replacements[rep.lesson]["teacher"]).first()
+        replacements[rep.lesson]["teacher_name"] = ' '.join([teacher.surname, teacher.name,
+                                                             teacher.patronymic])
+        replacements[rep.lesson]["duration"] = (rep.end_date - rep.start_date).seconds // 60
+
+    return {"lessons": lessons, "rep": replacements, "title": title}
 
 
 @login_manager.user_loader

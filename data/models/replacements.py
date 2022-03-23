@@ -1,9 +1,10 @@
 import sqlalchemy
 from sqlalchemy import orm
+from sqlalchemy_serializer import SerializerMixin
 from ..sqlalchemy.db_session import SqlAlchemyBase
 
 
-class Replacement(SqlAlchemyBase):
+class Replacement(SqlAlchemyBase, SerializerMixin):
     __tablename__ = 'replacements'
 
     id = sqlalchemy.Column(sqlalchemy.Integer,
