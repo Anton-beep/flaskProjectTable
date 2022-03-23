@@ -129,7 +129,9 @@ def user_edit(id):
             user = db_sess.query(User).filter(User.id == id).first()
             form.access_level.choices = [(1, 1), (2, 2), (3, 3)]
             form.access_level.data = user.access_level
-            level = 1
+            level = 1 if user.id != 1 else 0
+            form.password.validators = []
+            form.password_again.validators = []
         else:
             user = db_sess.query(User).filter(User.id == current_user.id).first()
             form.access_level.choices = [user.access_level]
