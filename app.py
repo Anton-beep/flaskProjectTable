@@ -18,18 +18,12 @@ import init
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 
+init.clear(True)
+db_session.global_init("db/timetable.db")
+init.fill_table(admin=True, users=True, lessons=True, replacements=True)
+
 login_manager = LoginManager()
 login_manager.init_app(app)
-
-
-def main():
-    init.clear(True)
-
-    db_session.global_init("db/timetable.db")
-
-    init.fill_table(admin=True, users=True, lessons=True, replacements=True)
-
-    app.run()
 
 
 @app.route('/')
@@ -144,7 +138,11 @@ def show_statistic():
     print(str(db_sess.query(Lesson).first().start_date).split()[0].split('-')[2])
     if interval == 'day':
         lessons = db_sess.query(Lesson).all()
-        print(lessons)
+        lessons = list(filter(lambda x: x.start_date.day == now.day, lessons))
+        start, end = min([x.start_date for x in lessons]), min([x.start_date for x in lessons])
+        param = {
+            "start": start, "end": end, "duration_total": end - start, "duration_": []
+        }
     return render_template('statistic.html', interval=interval)
 
 
@@ -296,5 +294,4 @@ def user_edit(id):
     return render_template('register.html', title='Редактирование профиля', form=form, level=level)
 
 
-if __name__ == '__main__':
-    main()
+app.run()
