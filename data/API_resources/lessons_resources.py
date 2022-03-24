@@ -77,13 +77,25 @@ class LessonsListResource(Resource):
     def get(self):
         args = parser_oneEl.parse_args()
         level = get_access_level(args['api-key'])
+        session = db_session.create_session()
         if level == 3:
-            session = db_session.create_session()
             lessons = session.query(Lesson).all()
             return flask.jsonify({'lessons': [item.to_dict(rules=('-user',))
                                               for item in lessons]})
-        else:
-            abort(403, message=f"Access denied")
+        if level == 2:
+            teacher = session.query(User).filter(User.token == args['api-key']).first()
+            lessons = session.query(Lesson).filter(Lesson.teacher == teacher.id)
+            if lessons:
+                return flask.jsonify({'lessons': [item.to_dict(rules=('-user',))
+                                                  for item in lessons]})
+            abort(403, message="Access denied")
+        if level == 1:
+            user = session.query(User).filter(User.token == args['api-key']).first()
+            lessons = session.query(Lesson).filter(Lesson.grade == user.grade)
+            if lessons:
+                return flask.jsonify({'lessons': [item.to_dict(rules=('-user',))
+                                                  for item in lessons]})
+            abort(403, message="Access denied")
 
     def post(self):
         args = parser.parse_args()

@@ -81,13 +81,25 @@ class ReplacementsListResource(Resource):
     def get(self):
         args = parser_oneEl.parse_args()
         level = get_access_level(args['api-key'])
+        session = db_session.create_session()
         if level == 3:
-            session = db_session.create_session()
             replacements = session.query(Replacement).all()
             return flask.jsonify({'replacements': [item.to_dict(rules=('-user', '-lessons'))
                                                    for item in replacements]})
-        else:
-            abort(403, message=f"Access denied")
+        if level == 2:
+            teacher = session.query(User).filter(User.token == args['api-key']).first()
+            replacements = session.query(Replacement).filter(Replacement.teacher == teacher.id)
+            if replacements:
+                return flask.jsonify({'replacements': [item.to_dict(rules=('-user', '-lessons'))
+                                                       for item in replacements]})
+            abort(403, message="Access denied")
+        if level == 1:
+            user = session.query(User).filter(User.token == args['api-key']).first()
+            replacements = session.query(Replacement).filter(Replacement.grade == user.grade)
+            if replacements:
+                return flask.jsonify({'replacements': [item.to_dict(rules=('-user', '-lessons'))
+                                                       for item in replacements]})
+            abort(403, message="Access denied")
 
     def post(self):
         args = parser.parse_args()
