@@ -1,9 +1,10 @@
 import sqlalchemy
 from sqlalchemy import orm
 from ..sqlalchemy.db_session import SqlAlchemyBase
+from sqlalchemy_serializer import SerializerMixin
 
 
-class Lesson(SqlAlchemyBase):
+class Lesson(SqlAlchemyBase, SerializerMixin):
     __tablename__ = 'lessons'
 
     id = sqlalchemy.Column(sqlalchemy.Integer,
