@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Статистика</h1>
+<form class="login_form" method="post">
+    <div class="form-group">
+        <label for="classSelect">Промежуток</label>
+        <select class="form-control" id="classSelect" name="interval">
+            {% if interval == "day" %}
+                <option selected value="day">День</option>
+                <option value="week">Неделя</option>
+                <option value="month">Месяц</option>
+            {% elif interval == "week" %}
+                <option value="day">День</option>
+                <option selected value="week">Неделя</option>
+                <option value="month">Месяц</option>
+            {% else %}
+                <option value="day">День</option>
+                <option value="week">Неделя</option>
+                <option selected value="month">Месяц</option>
+            {% endif %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Обновить</button>
+</form>
+{% endblock %}
