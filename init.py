@@ -65,7 +65,7 @@ def add_users(flag):
     db_sess.add(user)
 
     user = User()
-    user.surname, user.name = 'Darkholme', 'Van'
+    user.surname, user.name, user.patronymic = 'Darkholme', 'Van', 'Dungeon Master'
     user.email = 'dungen@master.gachi'
     user.set_password('fisting_is_300')
     user.access_level = 2
@@ -91,7 +91,7 @@ def add_lessons(flag):
     lesson = Lesson()
     lesson.topic = 'Алгебра'
     lesson.grade = '9Ф'
-    lesson.teacher = 1
+    lesson.teacher = 4
     lesson.cabinet = 'Gym'
     lesson.start_date = datetime.datetime(2022, 3, 27, 15, 0, 0, 0)
     lesson.end_date = datetime.datetime(2022, 3, 27, 15, 40, 0, 0)
@@ -100,8 +100,17 @@ def add_lessons(flag):
     lesson = Lesson()
     lesson.topic = 'Геометрия'
     lesson.grade = '9Ж'
-    lesson.teacher = 1
+    lesson.teacher = 4
     lesson.cabinet = 'Gym'
+    lesson.start_date = datetime.datetime(2022, 3, 27, 15, 55, 0, 0)
+    lesson.end_date = datetime.datetime(2022, 3, 27, 16, 35, 0, 0)
+    db_sess.add(lesson)
+
+    lesson = Lesson()
+    lesson.topic = 'Варка пельменей. Много мяса, мало теста'
+    lesson.grade = '9Ж'
+    lesson.teacher = 5
+    lesson.cabinet = 'Столовая'
     lesson.start_date = datetime.datetime(2022, 3, 27, 15, 55, 0, 0)
     lesson.end_date = datetime.datetime(2022, 3, 27, 16, 35, 0, 0)
     db_sess.add(lesson)
@@ -119,7 +128,7 @@ def add_replacements(flag):
     rep.lesson = 2
     rep.topic = 'Информатика'
     rep.grade = '9Ж'
-    rep.teacher = 2
+    rep.teacher = 5
     rep.cabinet = 'Столовая'
     rep.start_date = datetime.datetime(2022, 3, 27, 16, 0, 0, 0)
     rep.end_date = datetime.datetime(2022, 3, 27, 16, 40, 0, 0)

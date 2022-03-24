@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+    {% if current_user.is_authenticated %}
+        <h1>Расписание для <font color="green">{{ title }}</font></h1>
+        {% for lesson in lessons %}
+            {% if lesson["id"] in rep %}
+                <h2>{{ loop.index }}. Замена <font color="blue">{{ lesson["topic"] }}</font> на
+                    <font color="darkblue">{{ rep[lesson["id"]]["topic"] }}</font></h2>
+                <table>
+                    <tr>
+                        <th style="background-color:#FF7600">Учитель</th>
+                        <th style="background-color:#FF7600">Кабинет</th>
+                        <th style="background-color:#FF7600">Дата начала</th>
+                        <th style="background-color:#FF7600">Дата конца</th>
+                        <th style="background-color:#FF7600">Продолжительность</th>
+                    </tr>
+                    <tr>
+                        <td style="background-color:#01939A">{{ rep[lesson["id"]]["teacher"] }}</td>
+                        <td style="background-color:#01939A">{{ rep[lesson["id"]]["cabinet"] }}</td>
+                        <td style="background-color:#01939A">{{ rep[lesson["id"]]["start_date"] }}</td>
+                        <td style="background-color:#01939A">{{ rep[lesson["id"]]["end_date"] }}</td>
+                        <td style="background-color:#01939A">{{ rep[lesson["id"]]["duration"] }} мин</td>
+                    </tr>
+                </table>
+            {% else %}
+                <h2>{{ loop.index }}. <font color="blue">{{ lesson["topic"] }}</font></h2>
+                <table>
+                    <tr>
+                        <th style="background-color:#FF7600">Учитель</th>
+                        <th style="background-color:#FF7600">Кабинет</th>
+                        <th style="background-color:#FF7600">Дата начала</th>
+                        <th style="background-color:#FF7600">Дата конца</th>
+                        <th style="background-color:#FF7600">Продолжительность</th>
+                    </tr>
+                    <tr>
+                        <td style="background-color:#01939A">{{ lesson["teacher"] }}</td>
+                        <td style="background-color:#01939A">{{ lesson["cabinet"] }}</td>
+                        <td style="background-color:#01939A">{{ lesson["start_date"] }}</td>
+                        <td style="background-color:#01939A">{{ lesson["end_date"] }}</td>
+                        <td style="background-color:#01939A">{{ lesson["duration"] }} мин</td>
+                    </tr>
+                </table>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <h1>Войдите, чтобы увидить расписание</h1>
+    {% endif %}
+{% endblock %}
