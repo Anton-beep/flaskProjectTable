@@ -202,18 +202,19 @@ def login(token):
 @app.route('/register/<string:token>', methods=['GET', 'POST'])
 def register(token):
     db_sess = db_session.create_session()
-    user = db_sess.query(User).filter(User.token == token).first()
     form = RegisterForm()
-    if not user:
-        return render_template('register.html', title='Регистрация',
-                               message="Несуществующий токен",
-                               form=form)
-    form.token.data = user.token
-    form.grade.data = user.grade
-    form.access_level.choices = [(user.access_level, user.access_level)]
-    form.surname.data = user.surname
-    form.name.data = user.name
-    form.patronymic.data = user.patronymic
+    if request.method == "GET":
+        user = db_sess.query(User).filter(User.token == token).first()
+        if not user:
+            return render_template('register.html', title='Регистрация',
+                                   message="Несуществующий токен",
+                                   form=form)
+        form.token.data = user.token
+        form.grade.data = user.grade
+        form.access_level.choices = [(user.access_level, user.access_level)]
+        form.surname.data = user.surname
+        form.name.data = user.name
+        form.patronymic.data = user.patronymic
     if form.validate_on_submit():
         if form.password.data != form.password_again.data:
             return render_template('register.html', title='Регистрация',
@@ -225,7 +226,9 @@ def register(token):
                                    message="Такой пользователь уже есть")
         user = db_sess.query(User).filter(User.token == form.token.data).first()
         us = db_sess.query(User).filter(User.id == user.id).first()
-        us.name, us.surname, us.patronymic = form.name.data, form.surname.data, form.patronymic.data
+        us.name = form.name.data
+        us.surname = form.surname.data
+        us.patronymic = form.patronymic.data
         us.email = form.email.data
         us.set_password(form.password.data)
         db_sess.commit()
@@ -242,7 +245,7 @@ def user_edit(id):
         db_sess = db_session.create_session()
         if current_user.id == 1:
             user = db_sess.query(User).filter(User.id == id).first()
-            form.access_level.choices = [(1, 1), (2, 2), (3, 3)]
+            form.access_level.choices = [(3, 3), (2, 2), (1, 1)]
             form.access_level.data = user.access_level
             level = 1 if user.id != 1 else 0
             form.password.validators = []
@@ -268,6 +271,10 @@ def user_edit(id):
                                    form=form,
                                    message="Пароли не совпадают")
         db_sess = db_session.create_session()
+        if db_sess.query(User).filter(User.email == form.email.data, User.token != form.token.data).first():
+            return render_template('register.html', title='Регистрация',
+                                   form=form,
+                                   message="Такой пользователь уже есть")
         if current_user.id == 1:
             user = db_sess.query(User).filter(User.id == id).first()
             user.access_level = form.access_level.data
