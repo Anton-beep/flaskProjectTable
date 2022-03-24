@@ -102,8 +102,26 @@ def add_lessons(flag):
     lesson.grade = '9Ж'
     lesson.teacher = 4
     lesson.cabinet = 'Gym'
-    lesson.start_date = datetime.datetime(2022, 3, 27, 15, 55, 0, 0)
-    lesson.end_date = datetime.datetime(2022, 3, 27, 16, 35, 0, 0)
+    lesson.start_date = datetime.datetime(2022, 3, 24, 12, 10, 0, 0)
+    lesson.end_date = datetime.datetime(2022, 3, 24, 12, 40, 0, 0)
+    db_sess.add(lesson)
+
+    lesson = Lesson()
+    lesson.topic = 'Геометрия'
+    lesson.grade = '9Ж'
+    lesson.teacher = 5
+    lesson.cabinet = 'Gym'
+    lesson.start_date = datetime.datetime(2022, 3, 24, 13, 00, 0, 0)
+    lesson.end_date = datetime.datetime(2022, 3, 24, 13, 35, 0, 0)
+    db_sess.add(lesson)
+
+    lesson = Lesson()
+    lesson.topic = 'Химия'
+    lesson.grade = '9Ж'
+    lesson.teacher = 5
+    lesson.cabinet = 'Gym'
+    lesson.start_date = datetime.datetime(2022, 3, 24, 15, 20, 0, 0)
+    lesson.end_date = datetime.datetime(2022, 3, 24, 16, 20, 0, 0)
     db_sess.add(lesson)
 
     lesson = Lesson()
@@ -111,8 +129,8 @@ def add_lessons(flag):
     lesson.grade = '9Ж'
     lesson.teacher = 5
     lesson.cabinet = 'Столовая'
-    lesson.start_date = datetime.datetime(2022, 3, 27, 15, 55, 0, 0)
-    lesson.end_date = datetime.datetime(2022, 3, 27, 16, 35, 0, 0)
+    lesson.start_date = datetime.datetime(2022, 3, 25, 16, 50, 0, 0)
+    lesson.end_date = datetime.datetime(2022, 3, 25, 17, 25, 0, 0)
     db_sess.add(lesson)
 
     db_sess.commit()
@@ -130,8 +148,8 @@ def add_replacements(flag):
     rep.grade = '9Ж'
     rep.teacher = 5
     rep.cabinet = 'Столовая'
-    rep.start_date = datetime.datetime(2022, 3, 27, 16, 0, 0, 0)
-    rep.end_date = datetime.datetime(2022, 3, 27, 16, 40, 0, 0)
+    rep.start_date = datetime.datetime(2022, 3, 24, 16, 0, 0, 0)
+    rep.end_date = datetime.datetime(2022, 3, 24, 16, 40, 0, 0)
     db_sess.add(rep)
 
     db_sess.commit()

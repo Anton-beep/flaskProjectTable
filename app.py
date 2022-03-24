@@ -1,6 +1,6 @@
 import datetime
 
-from flask import Flask, redirect, render_template
+from flask import Flask, redirect, render_template, request
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 
 from data.sqlalchemy import db_session
@@ -48,7 +48,6 @@ def base():
         elif user.access_level == 3:
             param = param_for_admin()
             file = "show_admin.html"
-        print(param)
     return render_template(file, **param)
 
 
@@ -94,7 +93,8 @@ def param_for_teacher():
     for item in db_sess.query(Replacement).filter(Replacement.teacher == user.id).all():
         replacement = item.to_dict()
         replacement['duration'] = (item.end_date - item.start_date).seconds // 60
-        replacement['old_topic'] = db_sess.query(Lesson).filter(Lesson.id == item.lesson).first().topic
+        replacement['old_topic'] = db_sess.query(Lesson).filter(
+            Lesson.id == item.lesson).first().topic
 
         replacements.append(replacement)
 
@@ -131,6 +131,20 @@ def param_for_admin():
         replacements[rep.lesson]["duration"] = (rep.end_date - rep.start_date).seconds // 60
 
     return {"lessons": lessons, "rep": replacements, "title": title}
+
+
+@app.route('/statistic', methods=['POST', 'GET'])
+def show_statistic():
+    interval = 'day'
+    db_sess = db_session.create_session()
+    if request.method == 'POST':
+        interval = request.form['interval']
+    now = datetime.datetime.now()
+    print(str(db_sess.query(Lesson).first().start_date).split()[0].split('-')[2])
+    if interval == 'day':
+        lessons = db_sess.query(Lesson).all()
+        print(lessons)
+    return render_template('statistic.html', interval=interval)
 
 
 @login_manager.user_loader
