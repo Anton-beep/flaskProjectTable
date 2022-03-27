@@ -150,6 +150,7 @@ def sort_lessons(x):
                                  second=int(x["start_date"].split()[1].split(':')[2]))
     return rep.start_date
 
+
 def sort_replacements(x):
     return datetime.datetime(year=int(x["start_date"].split()[0].split('-')[0]),
                              month=int(x["start_date"].split()[0].split('-')[1]),
@@ -324,7 +325,8 @@ def user_edit(id):
                                    form=form,
                                    message="Пароли не совпадают")
         db_sess = db_session.create_session()
-        if db_sess.query(User).filter(User.email == form.email.data, User.token != form.token.data).first():
+        if db_sess.query(User).filter(User.email == form.email.data,
+                                      User.token != form.token.data).first():
             return render_template('register.html', title='Регистрация',
                                    form=form,
                                    message="Такой пользователь уже есть")

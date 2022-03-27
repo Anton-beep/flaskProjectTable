@@ -2,9 +2,9 @@
 
 {% block content %}
     {% if current_user.is_authenticated %}
-    <p>
-        <a class="btn btn-info" href="/statistic">Посмотреть статистику</a>
-    </p>
+        <p>
+            <a class="btn btn-info" href="/statistic">Посмотреть статистику</a>
+        </p>
         <h1>Расписание для <font color="green">{{ grade }}</font></h1>
         {% for lesson in lessons %}
             {% if lesson["id"] in replaced %}
@@ -25,7 +25,9 @@
                         <td style="background-color:#01939A">{{ replaced[lesson["id"]]["cabinet"] }}</td>
                         <td style="background-color:#01939A">{{ replaced[lesson["id"]]["start_date"] }}</td>
                         <td style="background-color:#01939A">{{ replaced[lesson["id"]]["end_date"] }}</td>
-                        <td style="background-color:#01939A">{{ replaced[lesson["id"]]["duration"] }} мин</td>
+                        <td style="background-color:#01939A">{{ replaced[lesson["id"]]["duration"] }}
+                            мин
+                        </td>
                     </tr>
                 </table>
             {% else %}
@@ -54,23 +56,23 @@
         {% endif %}
         {% for item in rep %}
             <h2>{{ loop.index }}. Замена <font color="blue">{{ item["old_topic"] }}</font> на
-                    <font color="darkblue">{{ item["topic"] }}</font></h2>
-                <table>
-                    <tr>
-                        <th style="background-color:#FF7600">Класс</th>
-                        <th style="background-color:#FF7600">Кабинет</th>
-                        <th style="background-color:#FF7600">Дата начала</th>
-                        <th style="background-color:#FF7600">Дата конца</th>
-                        <th style="background-color:#FF7600">Продолжительность</th>
-                    </tr>
-                    <tr>
-                        <td style="background-color:#01939A">{{ item["grade"] }}</td>
-                        <td style="background-color:#01939A">{{ item["cabinet"] }}</td>
-                        <td style="background-color:#01939A">{{ item["start_date"] }}</td>
-                        <td style="background-color:#01939A">{{ item["end_date"] }}</td>
-                        <td style="background-color:#01939A">{{ item["duration"] }} мин</td>
-                    </tr>
-                </table>
+                <font color="darkblue">{{ item["topic"] }}</font></h2>
+            <table>
+                <tr>
+                    <th style="background-color:#FF7600">Класс</th>
+                    <th style="background-color:#FF7600">Кабинет</th>
+                    <th style="background-color:#FF7600">Дата начала</th>
+                    <th style="background-color:#FF7600">Дата конца</th>
+                    <th style="background-color:#FF7600">Продолжительность</th>
+                </tr>
+                <tr>
+                    <td style="background-color:#01939A">{{ item["grade"] }}</td>
+                    <td style="background-color:#01939A">{{ item["cabinet"] }}</td>
+                    <td style="background-color:#01939A">{{ item["start_date"] }}</td>
+                    <td style="background-color:#01939A">{{ item["end_date"] }}</td>
+                    <td style="background-color:#01939A">{{ item["duration"] }} мин</td>
+                </tr>
+            </table>
         {% endfor %}
     {% else %}
         <h1>Войдите, чтобы увидить расписание</h1>

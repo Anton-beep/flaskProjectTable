@@ -15,17 +15,18 @@
 <h1>Flask Project Table</h1>
 <nav>
     {% if current_user.is_authenticated %}
-    {{ current_user.name }}
-    <p>
-        <a class="btn btn-warning" href="/user_edit/{{ current_user.id }}">Редактировать профиль</a>
-    </p>
-    <p>
-        <a class="btn btn-danger" href="/logout">Выйти</a>
-    </p>
+        {{ current_user.name }}
+        <p>
+            <a class="btn btn-warning" href="/user_edit/{{ current_user.id }}">Редактировать
+                профиль</a>
+        </p>
+        <p>
+            <a class="btn btn-danger" href="/logout">Выйти</a>
+        </p>
     {% else %}
-    <p>
-        <a class="btn btn-success" href="/token">Войти</a>
-    </p>
+        <p>
+            <a class="btn btn-success" href="/token">Войти</a>
+        </p>
     {% endif %}
 
 
