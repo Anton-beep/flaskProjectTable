@@ -1,6 +1,7 @@
 from flask import Flask, redirect, render_template, request
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_restful import abort
+from werkzeug.utils import secure_filename
 
 from data.sqlalchemy import db_session
 from data.models.users import User
@@ -16,13 +17,15 @@ import init
 import datetime
 import calendar
 
+import PIL
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'Church_Of_Saint_Floppa'
 
-init.clear(True)
+# init.clear(True)
 db_session.global_init("db/timetable.db")
-init.fill_table(admin=True, users=True, lessons=False, replacements=False)
-init.add_random(True, 150, 40)
+# init.fill_table(admin=True, users=True, lessons=False, replacements=False)
+# init.add_random(True, 150, 40)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -265,6 +268,8 @@ def register(token):
         form.surname.data = user.surname
         form.name.data = user.name
         form.patronymic.data = user.patronymic
+        image_path = user.image
+        print(image_path)
     if form.validate_on_submit():
         if db_sess.query(User).filter(User.token == form.token.data).first().email is not None:
             return render_template('register.html', title='Регистрация',
@@ -285,9 +290,24 @@ def register(token):
         us.patronymic = form.patronymic.data
         us.email = form.email.data
         us.set_password(form.password.data)
+
+        # пикча
+        file = request.files['file']
+        if file:
+            file.save('static/img/' + secure_filename(file.filename))
+
+            fixed_width = 200
+            img = PIL.Image.open('static/img/' + secure_filename(file.filename))
+            width_percent = (fixed_width / float(img.size[0]))
+            height_size = int((float(img.size[0]) * float(width_percent)))
+            new_image = img.resize((fixed_width, height_size))
+            new_image.save('static/img/' + secure_filename(file.filename))
+
+            us.image = 'static/img/' + secure_filename(file.filename)
+
         db_sess.commit()
         return redirect(f'/login/{user.token}')
-    return render_template('register.html', title='Регистрация', form=form)
+    return render_template('register.html', title='Регистрация', form=form, image_path=image_path)
 
 
 @app.route('/user_edit/<int:id>', methods=['GET', 'POST'])
@@ -318,6 +338,7 @@ def user_edit(id):
             form.token.data = user.token
         else:
             abort(404)
+        image_path = user.image
 
     if form.validate_on_submit():
         if form.password.data != form.password_again.data:
@@ -344,11 +365,28 @@ def user_edit(id):
             user.email = form.email.data
             user.token = form.token.data
             user.set_password(form.password.data)
+
+            # пикча
+            # file = request.files['file']
+            print(list(request.files))
+            file = None
+            if file:
+                file.save('static/img/' + secure_filename(file.filename))
+
+                fixed_width = 200
+                img = PIL.Image.open('static/img/' + secure_filename(file.filename))
+                width_percent = (fixed_width / float(img.size[0]))
+                height_size = int((float(img.size[0]) * float(width_percent)))
+                new_image = img.resize((fixed_width, height_size))
+                new_image.save('static/img/' + secure_filename(file.filename))
+
+                user.image = 'static/img/' + secure_filename(file.filename)
             db_sess.commit()
             return redirect('/')
         else:
             abort(404)
-    return render_template('register.html', title='Редактирование профиля', form=form, level=level)
+    return render_template('register.html', title='Редактирование профиля', form=form, level=level,
+                           image_path=image_path)
 
 
 app.run()

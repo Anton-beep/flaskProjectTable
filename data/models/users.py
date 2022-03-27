@@ -22,6 +22,7 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
                                       default=datetime.datetime.now)
     access_level = sqlalchemy.Column(sqlalchemy.Integer)
     token = sqlalchemy.Column(sqlalchemy.String, unique=True)
+    image = sqlalchemy.Column(sqlalchemy.String, default='/static/img/default.png', unique=True)
 
     def set_password(self, password):
         self.hashed_password = generate_password_hash(password)
