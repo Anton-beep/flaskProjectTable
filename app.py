@@ -1,5 +1,3 @@
-import datetime
-
 from flask import Flask, redirect, render_template, request
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_restful import abort
@@ -8,19 +6,23 @@ from data.sqlalchemy import db_session
 from data.models.users import User
 from data.models.lessons import Lesson
 from data.models.replacements import Replacement
+from data.statistic import GoogleCharts, analyze
 
 from forms.login import LoginForm
 from forms.register import RegisterForm
 from forms.token_check import TokenForm
 
 import init
+import datetime
+import calendar
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
+app.config['SECRET_KEY'] = 'Church_Of_Saint_Floppa'
 
 init.clear(True)
 db_session.global_init("db/timetable.db")
-init.fill_table(admin=True, users=True, lessons=True, replacements=True)
+init.fill_table(admin=True, users=True, lessons=False, replacements=False)
+init.add_random(True, 150, 40)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -67,7 +69,10 @@ def param_for_user():
         replacement['teacher'] = ' '.join([teacher.surname, teacher.name, teacher.patronymic])
 
         replacements[item.lesson] = replacement
-    return {"lessons": lessons, "rep": replacements, "title": title}
+
+    lessons.sort(key=lambda x: sort_lessons(x))
+    return {"lessons": lessons, "rep": replacements,
+            "title": 'Расписание для ' + title, "grade": title}
 
 
 def param_for_teacher():
@@ -102,7 +107,10 @@ def param_for_teacher():
 
         replaced[item.lesson] = rep
 
-    return {"lessons": lessons, "rep": replacements, "title": title, "replaced": replaced}
+    lessons.sort(key=lambda x: sort_lessons(x))
+    replacements.sort(key=lambda x: sort_replacements(x))
+    return {"lessons": lessons, "rep": replacements, "grade": title,
+            "title": 'Расписание для ' + title, "replaced": replaced}
 
 
 def param_for_admin():
@@ -125,25 +133,68 @@ def param_for_admin():
                                                              teacher.patronymic])
         replacements[rep.lesson]["duration"] = (rep.end_date - rep.start_date).seconds // 60
 
-    return {"lessons": lessons, "rep": replacements, "title": title}
+    lessons.sort(key=lambda x: sort_lessons(x))
+    return {"lessons": lessons, "rep": replacements,
+            "title": 'Расписание для ' + title, "grade": title}
+
+
+def sort_lessons(x):
+    db_sess = db_session.create_session()
+    rep = db_sess.query(Replacement).filter(Replacement.lesson == x["id"]).first()
+    if rep is None:
+        return datetime.datetime(year=int(x["start_date"].split()[0].split('-')[0]),
+                                 month=int(x["start_date"].split()[0].split('-')[1]),
+                                 day=int(x["start_date"].split()[0].split('-')[2]),
+                                 hour=int(x["start_date"].split()[1].split(':')[0]),
+                                 minute=int(x["start_date"].split()[1].split(':')[1]),
+                                 second=int(x["start_date"].split()[1].split(':')[2]))
+    return rep.start_date
+
+def sort_replacements(x):
+    return datetime.datetime(year=int(x["start_date"].split()[0].split('-')[0]),
+                             month=int(x["start_date"].split()[0].split('-')[1]),
+                             day=int(x["start_date"].split()[0].split('-')[2]),
+                             hour=int(x["start_date"].split()[1].split(':')[0]),
+                             minute=int(x["start_date"].split()[1].split(':')[1]),
+                             second=int(x["start_date"].split()[1].split(':')[2]))
 
 
 @app.route('/statistic', methods=['POST', 'GET'])
 def show_statistic():
     interval = 'day'
-    db_sess = db_session.create_session()
+    replacements = {"replace": 0, "replaced": 0}
+
     if request.method == 'POST':
         interval = request.form['interval']
     now = datetime.datetime.now()
-    print(str(db_sess.query(Lesson).first().start_date).split()[0].split('-')[2])
-    if interval == 'day':
-        lessons = db_sess.query(Lesson).all()
-        lessons = list(filter(lambda x: x.start_date.day == now.day, lessons))
-        start, end = min([x.start_date for x in lessons]), min([x.start_date for x in lessons])
-        param = {
-            "start": start, "end": end, "duration_total": end - start, "duration_": []
-        }
-    return render_template('statistic.html', interval=interval)
+    try:
+        if interval == 'day':
+            date = now.day
+        elif interval == 'week':
+            mon = now.day - now.weekday()
+            sun = mon + 6
+            date = range(mon, sun + 1)
+        else:
+            date = [now.month]
+
+        param = analyze.analyze(date, current_user.grade,
+                                current_user.access_level, current_user.id)
+    except ValueError:
+        return render_template('statistic.html', title="Статистика", interval=interval,
+                               error="Уроков нет на данном промежутке")
+
+    GoogleCharts.pie_chart(param)
+    GoogleCharts.combo_chart(param)
+    try:
+        if current_user.access_level == 3:
+            GoogleCharts.bar_chart(param)
+        elif current_user.access_level == 2:
+            replacements = GoogleCharts.area_chart(param)
+    except ValueError:
+        return render_template('statistic.html', title="Статистика", interval=interval,
+                               error_rep="Замен нет на данном промежутке нет", error=None)
+    return render_template('statistic.html', title="Статистика", interval=interval,
+                           error=None, error_rep=None, replacements=replacements, **param)
 
 
 @login_manager.user_loader
@@ -214,6 +265,10 @@ def register(token):
         form.name.data = user.name
         form.patronymic.data = user.patronymic
     if form.validate_on_submit():
+        if db_sess.query(User).filter(User.token == form.token.data).first().email is not None:
+            return render_template('register.html', title='Регистрация',
+                                   form=form,
+                                   message="Этот пользователь уже зарегистрирован")
         if form.password.data != form.password_again.data:
             return render_template('register.html', title='Регистрация',
                                    form=form,

@@ -1,26 +1,172 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Статистика</h1>
+<p>
+    <a class="btn btn-info" href="/">Обратно к расписанию</a>
+</p>
+<h1>Статистика для <font color="green">{{ grade }}</font></h1>
 <form class="login_form" method="post">
     <div class="form-group">
         <label for="classSelect">Промежуток</label>
         <select class="form-control" id="classSelect" name="interval">
             {% if interval == "day" %}
-                <option selected value="day">День</option>
-                <option value="week">Неделя</option>
-                <option value="month">Месяц</option>
+            <option selected value="day">День</option>
+            <option value="week">Неделя</option>
+            <option value="month">Месяц</option>
             {% elif interval == "week" %}
-                <option value="day">День</option>
-                <option selected value="week">Неделя</option>
-                <option value="month">Месяц</option>
+            <option value="day">День</option>
+            <option selected value="week">Неделя</option>
+            <option value="month">Месяц</option>
             {% else %}
-                <option value="day">День</option>
-                <option value="week">Неделя</option>
-                <option selected value="month">Месяц</option>
+            <option value="day">День</option>
+            <option value="week">Неделя</option>
+            <option selected value="month">Месяц</option>
             {% endif %}
         </select>
     </div>
     <button type="submit" class="btn btn-primary">Обновить</button>
 </form>
+{% if error == None %}
+    <h2>Первый урок в промежутке начинается в <font color="blue">{{ start }}</font></h2>
+    <h2>Последний урок в промежутке заканчивается в <font color="blue">{{ end }}</font></h2>
+    <h2>За уроками ты проведёшь <font color="red">{{ duration_total }}</font></h2>
+    <h2>В среднем по <font color="blue">{{ duration_average }}</font> на 1 уроке</h2>
+    <h2>А всего уроков <font color="green">{{ lesson_total }}</font></h2>
+
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript"
+            src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script type="text/javascript">
+
+        google.charts.load('current', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(drawChart);
+
+        function drawChart() {
+          var jsonData = $.ajax({
+              url: "static/json/PieChart.json",
+              dataType: "json",
+              async: false
+              }).responseText;
+
+          var data = new google.visualization.DataTable(jsonData);
+
+          var options = {
+              title: 'Количество минут проведённых на уроках',
+              is3D: true,
+              width: 900,
+              height: 500,
+            };
+
+            var chart = new google.visualization.PieChart(document.getElementById('pie_chart'));
+            chart.draw(data, options);
+        }
+    </script>
+    <div id="pie_chart"></div>
+
+
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(drawVisualization);
+
+      function drawVisualization() {
+        // Some raw data (not necessarily accurate)
+        var jsonData = $.ajax({
+              url: "static/json/ComboChart.json",
+              dataType: "json",
+              async: false
+              }).responseText;
+
+          var data = new google.visualization.DataTable(jsonData);
+
+
+        var options = {
+          title : 'Распределение предметов и уроков по дням',
+          vAxis: {title: 'lessons'},
+          hAxis: {title: 'Days'},
+          seriesType: 'bars',
+          series: {0: {type: 'line'}}
+        };
+
+        var chart = new google.visualization.ComboChart(document.getElementById('chart_div'));
+        chart.draw(data, options);
+      }
+    </script>
+    <div id="chart_div" style="width: 1000px; height: 555px;"></div>
+{% if error_rep == None %}
+    {% if current_user.access_level == 3 %}
+        <h2>Замены</h2>
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <script type="text/javascript">
+          google.charts.load('current', {'packages':['bar']});
+          google.charts.setOnLoadCallback(drawChart);
+
+          function drawChart() {
+            var jsonData = $.ajax({
+              url: "static/json/BarChart.json",
+              dataType: "json",
+              async: false
+              }).responseText;
+
+          var data = new google.visualization.DataTable(jsonData);
+
+              var options = {
+                legend: { position: 'top', maxLines: 3 },
+                bar: { groupWidth: '75%' },
+                isStacked: true,
+                series: {
+                    0:{color:'#4566c8'},
+                    1:{color:'#c64520'},
+                    2:{color:'#ed9d2c'},
+                    3:{color:'#4a942b'},
+                    4:{color:'#891a95'},
+                    5:{color:'#17a2b8'},
+                    6:{color:'#ffc107'},
+                    7:{color:'#6610f2'},
+                    8:{color:'#20c997'}
+                  }
+                };
+
+            var chart = new google.charts.Bar(document.getElementById('stacked_bar_div'));
+
+            chart.draw(data, google.charts.Bar.convertOptions(options));
+          }
+        </script>
+        <div id="stacked_bar_div" style="width: 900px; height: 500px;"></div>
+    {% elif current_user.access_level == 2 %}
+        <h2>Замены</h2>
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <script type="text/javascript">
+          google.charts.load('current', {'packages':['corechart']});
+          google.charts.setOnLoadCallback(drawChart);
+
+          function drawChart() {
+            var jsonData = $.ajax({
+              url: "static/json/AreaChart.json",
+              dataType: "json",
+              async: false
+              }).responseText;
+
+          var data = new google.visualization.DataTable(jsonData);
+
+            var options = {
+              title: 'Company Performance',
+              hAxis: {title: 'Year',  titleTextStyle: {color: '#333'}},
+              vAxis: {minValue: 0}
+            };
+
+            var chart = new google.visualization.AreaChart(document.getElementById('area_div'));
+            chart.draw(data, options);
+          }
+        </script>
+        <div id="area_div" style="width: 100%; height: 500px;"></div>
+
+        <h2>Вы заменяли <font color="green">{{ replacements["replace"] }}</font> раз</h2>
+        <h2>Вас заменяли <font color="red">{{ replacements["replaced"] }}</font> раз</h2>
+    {% endif %}
+{% else %}
+    <h1>{{ error_rep }}</h1>
+{% endif %}
+{% else %}
+    <h1>{{ error }}</h1>
+{% endif %}
 {% endblock %}
