@@ -1,8 +1,12 @@
+"""main"""
+
 import os
+import datetime
+import PIL
 
 from flask import Flask, redirect, render_template, request
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
-from flask_restful import abort
+from flask_restful import abort, Api
 from werkzeug.utils import secure_filename
 
 from data.sqlalchemy import db_session
@@ -10,24 +14,38 @@ from data.models.users import User
 from data.models.lessons import Lesson
 from data.models.replacements import Replacement
 from data.statistic import GoogleCharts, analyze
+from data.API_resources import users_resources
+from data.API_resources import lessons_resources
+from data.API_resources import replacements_resources
 
 from forms.login import LoginForm
 from forms.register import RegisterForm
 from forms.token_check import TokenForm
 
 import init
-import datetime
-import calendar
-
-import PIL
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'Church_Of_Saint_Floppa'
+
 
 # init.clear(True)
 db_session.global_init("db/timetable.db")
 # init.fill_table(admin=True, users=True, lessons=False, replacements=False)
 # init.add_random(True, 150, 40)
+
+api = Api(app)
+# users api
+api.add_resource(users_resources.UserListResource, '/api/users')
+api.add_resource(users_resources.UsersResource, '/api/users/<int:users_id>')
+
+# lessons api
+api.add_resource(lessons_resources.LessonsListResource, '/api/lessons')
+api.add_resource(lessons_resources.LessonsResource, '/api/lessons/<int:lessons_id>')
+
+# replacements api
+api.add_resource(replacements_resources.ReplacementsListResource, '/api/replacements')
+api.add_resource(replacements_resources.ReplacementsResource,
+                 '/api/replacements/<int:replacements_id>')
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -35,6 +53,7 @@ login_manager.init_app(app)
 
 @app.route('/')
 def base():
+    """view table"""
     param = {}
     file = "show_user.html"
     if current_user.is_authenticated:
@@ -143,30 +162,31 @@ def param_for_admin():
             "title": 'Расписание для ' + title, "grade": title}
 
 
-def sort_lessons(x):
+def sort_lessons(elem):
     db_sess = db_session.create_session()
-    rep = db_sess.query(Replacement).filter(Replacement.lesson == x["id"]).first()
+    rep = db_sess.query(Replacement).filter(Replacement.lesson == elem["id"]).first()
     if rep is None:
-        return datetime.datetime(year=int(x["start_date"].split()[0].split('-')[0]),
-                                 month=int(x["start_date"].split()[0].split('-')[1]),
-                                 day=int(x["start_date"].split()[0].split('-')[2]),
-                                 hour=int(x["start_date"].split()[1].split(':')[0]),
-                                 minute=int(x["start_date"].split()[1].split(':')[1]),
-                                 second=int(x["start_date"].split()[1].split(':')[2]))
+        return datetime.datetime(year=int(elem["start_date"].split()[0].split('-')[0]),
+                                 month=int(elem["start_date"].split()[0].split('-')[1]),
+                                 day=int(elem["start_date"].split()[0].split('-')[2]),
+                                 hour=int(elem["start_date"].split()[1].split(':')[0]),
+                                 minute=int(elem["start_date"].split()[1].split(':')[1]),
+                                 second=int(elem["start_date"].split()[1].split(':')[2]))
     return rep.start_date
 
 
-def sort_replacements(x):
-    return datetime.datetime(year=int(x["start_date"].split()[0].split('-')[0]),
-                             month=int(x["start_date"].split()[0].split('-')[1]),
-                             day=int(x["start_date"].split()[0].split('-')[2]),
-                             hour=int(x["start_date"].split()[1].split(':')[0]),
-                             minute=int(x["start_date"].split()[1].split(':')[1]),
-                             second=int(x["start_date"].split()[1].split(':')[2]))
+def sort_replacements(elem):
+    return datetime.datetime(year=int(elem["start_date"].split()[0].split('-')[0]),
+                             month=int(elem["start_date"].split()[0].split('-')[1]),
+                             day=int(elem["start_date"].split()[0].split('-')[2]),
+                             hour=int(elem["start_date"].split()[1].split(':')[0]),
+                             minute=int(elem["start_date"].split()[1].split(':')[1]),
+                             second=int(elem["start_date"].split()[1].split(':')[2]))
 
 
 @app.route('/statistic', methods=['POST', 'GET'])
 def show_statistic():
+    """show statistics"""
     interval = 'day'
     replacements = {"replace": 0, "replaced": 0}
 
@@ -218,6 +238,7 @@ def logout():
 
 @app.route('/token', methods=['GET', 'POST'])
 def token_check():
+    """check token"""
     form = TokenForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
@@ -234,6 +255,7 @@ def token_check():
 
 @app.route('/login/<string:token>', methods=['GET', 'POST'])
 def login(token):
+    """user login"""
     form = LoginForm()
     form.token.data = token
     if form.validate_on_submit():
@@ -256,6 +278,7 @@ def login(token):
 
 @app.route('/register/<string:token>', methods=['GET', 'POST'])
 def register(token):
+    """register user"""
     db_sess = db_session.create_session()
     form = RegisterForm()
     if request.method == "GET":
@@ -286,12 +309,12 @@ def register(token):
                                    form=form,
                                    message="Такой пользователь уже есть")
         user = db_sess.query(User).filter(User.token == form.token.data).first()
-        us = db_sess.query(User).filter(User.id == user.id).first()
-        us.name = form.name.data
-        us.surname = form.surname.data
-        us.patronymic = form.patronymic.data
-        us.email = form.email.data
-        us.set_password(form.password.data)
+        user_elem = db_sess.query(User).filter(User.id == user.id).first()
+        user_elem.name = form.name.data
+        user_elem.surname = form.surname.data
+        user_elem.patronymic = form.patronymic.data
+        user_elem.email = form.email.data
+        user_elem.set_password(form.password.data)
 
         # пикча
         file = request.files['file']
@@ -315,6 +338,7 @@ def register(token):
 @app.route('/user_edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 def user_edit(id):
+    """edit user data"""
     form = RegisterForm()
     level = 0
     if request.method == "GET":
@@ -385,8 +409,7 @@ def user_edit(id):
                 user.image = '/static/img/' + secure_filename(file.filename)
             db_sess.commit()
             return redirect('/')
-        else:
-            abort(404)
+        abort(404)
     return render_template('register.html', title='Редактирование профиля', form=form, level=level,
                            image_path=image_path)
 
