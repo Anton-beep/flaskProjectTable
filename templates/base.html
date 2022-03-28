@@ -16,6 +16,7 @@
 <nav>
     {% if current_user.is_authenticated %}
         {{ current_user.name }}
+        <img style="margin-left: 50px;" src="{{ current_user.image }}" alt="А где" width=50 height=50>
         <p>
             <a class="btn btn-warning" href="/user_edit/{{ current_user.id }}">Редактировать
                 профиль</a>

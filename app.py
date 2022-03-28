@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, redirect, render_template, request
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_restful import abort
@@ -367,9 +369,7 @@ def user_edit(id):
             user.set_password(form.password.data)
 
             # пикча
-            # file = request.files['file']
-            print(list(request.files))
-            file = None
+            file = request.files['file']
             if file:
                 file.save('static/img/' + secure_filename(file.filename))
 
@@ -380,7 +380,9 @@ def user_edit(id):
                 new_image = img.resize((fixed_width, height_size))
                 new_image.save('static/img/' + secure_filename(file.filename))
 
-                user.image = 'static/img/' + secure_filename(file.filename)
+                if user.image.split('/')[-1] != 'default.png':
+                    os.remove(user.image[1:])
+                user.image = '/static/img/' + secure_filename(file.filename)
             db_sess.commit()
             return redirect('/')
         else:
