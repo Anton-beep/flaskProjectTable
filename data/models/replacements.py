@@ -11,7 +11,7 @@ class Replacement(SqlAlchemyBase, SerializerMixin):
     id = sqlalchemy.Column(sqlalchemy.Integer,
                            primary_key=True, autoincrement=True)
     lesson = sqlalchemy.Column(sqlalchemy.Integer,
-                                  sqlalchemy.ForeignKey("lessons.id"))
+                               sqlalchemy.ForeignKey("lessons.id"))
     lessons = orm.relation('Lesson')
     topic = sqlalchemy.Column(sqlalchemy.String)
     grade = sqlalchemy.Column(sqlalchemy.String)
@@ -19,5 +19,3 @@ class Replacement(SqlAlchemyBase, SerializerMixin):
                                 sqlalchemy.ForeignKey("users.id"))
     user = orm.relation('User')
     cabinet = sqlalchemy.Column(sqlalchemy.String)
-    start_date = sqlalchemy.Column(sqlalchemy.DateTime)
-    end_date = sqlalchemy.Column(sqlalchemy.DateTime)

@@ -16,5 +16,4 @@ class Lesson(SqlAlchemyBase, SerializerMixin):
                                 sqlalchemy.ForeignKey("users.id"))
     user = orm.relation('User')
     cabinet = sqlalchemy.Column(sqlalchemy.String)
-    start_date = sqlalchemy.Column(sqlalchemy.DateTime)
-    end_date = sqlalchemy.Column(sqlalchemy.DateTime)
+    time = sqlalchemy.Column(sqlalchemy.String)

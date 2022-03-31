@@ -2,11 +2,15 @@
 
 import os
 import datetime
+from itertools import cycle
+from pprint import pprint
+
 import PIL
 
 from flask import Flask, redirect, render_template, request
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_restful import abort, Api
+from sqlalchemy import or_
 from werkzeug.utils import secure_filename
 
 from data.sqlalchemy import db_session
@@ -26,7 +30,6 @@ import init
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'Church_Of_Saint_Floppa'
-
 
 # init.clear(True)
 db_session.global_init("db/timetable.db")
@@ -51,138 +54,136 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
-@app.route('/')
-def base():
-    """view table"""
-    param = {}
-    file = "show_user.html"
-    if current_user.is_authenticated:
-        db_sess = db_session.create_session()
-        user = db_sess.query(User).filter(User.id == current_user.id).first()
+# @app.route('/')
+# def base():
+#     """view table"""
+#     param = {}
+#     file = "show_user.html"
+#     if current_user.is_authenticated:
+#         db_sess = db_session.create_session()
+#         user = db_sess.query(User).filter(User.id == current_user.id).first()
+#
+#         if user.access_level == 1:
+#             param = param_for_user()
+#             file = "show_user.html"
+#         elif user.access_level == 2:
+#             param = param_for_teacher()
+#             file = "show_teacher.html"
+#         elif user.access_level == 3:
+#             param = param_for_admin()
+#             file = "show_admin.html"
+#     return render_template(file, **param)
 
-        if user.access_level == 1:
-            param = param_for_user()
-            file = "show_user.html"
-        elif user.access_level == 2:
-            param = param_for_teacher()
-            file = "show_teacher.html"
-        elif user.access_level == 3:
-            param = param_for_admin()
-            file = "show_admin.html"
-    return render_template(file, **param)
 
+def table_data_for_user(grade) -> tuple:
+    """returns header and rows"""
+    header = ['Номер урока', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
+    rows = list()
 
-def param_for_user():
     db_sess = db_session.create_session()
-    grade = db_sess.query(User).filter(User.id == current_user.id).first().grade
-    title = grade
-    lessons = []
-    for item in db_sess.query(Lesson).filter(Lesson.grade == grade).all():
-        lesson = item.to_dict()
-        lesson['duration'] = (item.end_date - item.start_date).seconds // 60
-        teacher = db_sess.query(User).filter(User.id == item.teacher).first()
-        lesson['teacher'] = ' '.join([teacher.surname, teacher.name, teacher.patronymic])
+    lessons_user = list(db_sess.query(Lesson).filter(Lesson.grade == grade))
+    lessons_week = {
+        'monday': dict(),
+        'tuesday': dict(),
+        'wednesday': dict(),
+        'thursday': dict(),
+        'friday': dict(),
+        'saturday': dict()
+    }
+    for el in lessons_week.keys():
+        for lesson in sorted(filter(lambda x: x.time.split('_')[1] == el, lessons_user),
+                             key=lambda x: int(x.time.split('_')[0])):
+            replacement = db_sess.query(Replacement).filter(Replacement.lesson == lesson.id).first()
+            if replacement:
+                lessons_week[el][int(
+                    lesson.time.split('_')[0])] = f'ЗАМЕНА {lesson.topic} НА {replacement.topic}' \
+                                                  f' В КАБИНЕТЕ {replacement.cabinet}'
+            else:
+                lessons_week[el][
+                    int(lesson.time.split('_')[0])] = lesson.topic + ' ' + lesson.cabinet
 
-        lessons.append(lesson)
+    min_count = min([min(el.keys(), default=1) for el in lessons_week.values()])
+    max_count = max([max(el.keys(), default=1) for el in lessons_week.values()])
 
-    replacements = {}
-    for item in db_sess.query(Replacement).filter(Replacement.grade == grade).all():
-        replacement = item.to_dict()
-        replacement['duration'] = (item.end_date - item.start_date).seconds // 60
-        teacher = db_sess.query(User).filter(User.id == item.teacher).first()
-        replacement['teacher'] = ' '.join([teacher.surname, teacher.name, teacher.patronymic])
+    for iter in range(min_count, max_count + 1):
+        rows.append([str(iter)] + [el.get(iter, '-') for el in lessons_week.values()])
 
-        replacements[item.lesson] = replacement
-
-    lessons.sort(key=lambda x: sort_lessons(x))
-    return {"lessons": lessons, "rep": replacements,
-            "title": 'Расписание для ' + title, "grade": title}
+    return header, rows
 
 
-def param_for_teacher():
+def table_data_for_teacher(teacher) -> tuple:
+    """returns header and rows"""
+    header = ['Номер урока', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
+    rows = list()
+
     db_sess = db_session.create_session()
-    user = db_sess.query(User).filter(User.id == current_user.id).first()
-    title = ' '.join([user.surname, user.name, user.patronymic])
-    list_of_id = []
+    lessons_teacher = list(db_sess.query(Lesson).filter(Lesson.teacher == teacher))
+    replacements_teacher = list(db_sess.query(Replacement).filter(Replacement.teacher == teacher))
+    lessons_week = {
+        'monday': dict(),
+        'tuesday': dict(),
+        'wednesday': dict(),
+        'thursday': dict(),
+        'friday': dict(),
+        'saturday': dict()
+    }
+    for el in lessons_week.keys():
+        for lesson in sorted(filter(lambda x: x.time.split('_')[1] == el, lessons_teacher),
+                             key=lambda x: int(x.time.split('_')[0])):
+            lessons_week[el][int(lesson.time.split('_')[0])] = lesson.topic + ' ' + lesson.cabinet
 
-    lessons = []
-    for item in db_sess.query(Lesson).filter(Lesson.teacher == user.id).all():
-        lesson = item.to_dict()
-        lesson['duration'] = (item.end_date - item.start_date).seconds // 60
-        list_of_id.append(item.id)
+        for replacement in sorted(
+                filter(lambda x: x.lessons.time.split('_')[1] == el, replacements_teacher),
+                key=lambda x: int(x.lessons.time.split('_')[0])):
+            lessons_week[el][
+                int(replacement.lessons.time.split('_')[
+                        0])] = f'ЗАМЕНА У {replacement.grade} : ' + replacement.topic +\
+                               ' ' + replacement.cabinet
 
-        lessons.append(lesson)
+    min_count = min([min(el.keys(), default=1) for el in lessons_week.values()])
+    max_count = max([max(el.keys(), default=1) for el in lessons_week.values()])
 
-    replacements = []
-    for item in db_sess.query(Replacement).filter(Replacement.teacher == user.id).all():
-        replacement = item.to_dict()
-        replacement['duration'] = (item.end_date - item.start_date).seconds // 60
-        replacement['old_topic'] = db_sess.query(Lesson).filter(
-            Lesson.id == item.lesson).first().topic
+    for iter in range(min_count, max_count + 1):
+        rows.append([str(iter)] + [el.get(iter, '-') for el in lessons_week.values()])
 
-        replacements.append(replacement)
-
-    replaced = {}
-    for item in db_sess.query(Replacement).filter(Replacement.lesson.in_(list_of_id)).all():
-        rep = item.to_dict()
-        rep['duration'] = (item.end_date - item.start_date).seconds // 60
-        teacher = db_sess.query(User).filter(User.id == item.teacher).first()
-        rep['teacher'] = ' '.join([teacher.surname, teacher.name, teacher.patronymic])
-
-        replaced[item.lesson] = rep
-
-    lessons.sort(key=lambda x: sort_lessons(x))
-    replacements.sort(key=lambda x: sort_replacements(x))
-    return {"lessons": lessons, "rep": replacements, "grade": title,
-            "title": 'Расписание для ' + title, "replaced": replaced}
+    return header, rows
 
 
-def param_for_admin():
-    title = 'всех учеников и учитилей'
+def table_data_for_admin():
     db_sess = db_session.create_session()
-    lessons = []
-    for lesson in db_sess.query(Lesson).all():
-        les = lesson.to_dict()
-        teacher = db_sess.query(User).filter(User.id == lesson.teacher).first()
-        les["teacher_name"] = ' '.join([teacher.surname, teacher.name, teacher.patronymic])
-        les["duration"] = (lesson.end_date - lesson.start_date).seconds // 60
+    header = ['Номер урока'] + [teacher.name + ' ' + teacher.surname for teacher in list(
+        db_sess.query(User).filter(or_(User.access_level == 2, User.access_level == 3)))]
+    rows = list()
 
-        lessons.append(les)
+    lessons_admin = list(db_sess.query(Lesson))
+    lessons_dict = dict()
+    for teacher in list(
+            db_sess.query(User).filter(or_(User.access_level == 2, User.access_level == 3))):
+        lessons_dict[teacher] = db_sess.query(Lesson).filter(Lesson.teacher == teacher.id)
 
-    replacements = {}
-    for rep in db_sess.query(Replacement).all():
-        replacements[rep.lesson] = rep.to_dict()
-        teacher = db_sess.query(User).filter(User.id == replacements[rep.lesson]["teacher"]).first()
-        replacements[rep.lesson]["teacher_name"] = ' '.join([teacher.surname, teacher.name,
-                                                             teacher.patronymic])
-        replacements[rep.lesson]["duration"] = (rep.end_date - rep.start_date).seconds // 60
+    min_count = min([int(el.time.split('_')[0]) for el in lessons_admin])
+    max_count = max([int(el.time.split('_')[0]) for el in lessons_admin])
 
-    lessons.sort(key=lambda x: sort_lessons(x))
-    return {"lessons": lessons, "rep": replacements,
-            "title": 'Расписание для ' + title, "grade": title}
+    for iter in range(min_count, max_count + 1):
+        new_row = [str(iter)]
+        for teacher in list(
+                db_sess.query(User).filter(or_(User.access_level == 2, User.access_level == 3))):
+            lessons_iter = list(filter(lambda x: x.time.split('_')[0] == str(iter),
+                                       lessons_dict[teacher]))
 
+            if len(lessons_iter) > 0:
+                replacement = db_sess.query(Replacement).filter(Replacement.lesson ==
+                                                                lessons_iter[0].id).first()
+                if replacement:
+                    new_row += [f'ЗАМЕНА НА {replacement.grade}']
+                else:
+                    new_row += [lessons_iter[0].grade]
+            else:
+                new_row += ['-']
+        rows.append(new_row)
+    return header, rows
 
-def sort_lessons(elem):
-    db_sess = db_session.create_session()
-    rep = db_sess.query(Replacement).filter(Replacement.lesson == elem["id"]).first()
-    if rep is None:
-        return datetime.datetime(year=int(elem["start_date"].split()[0].split('-')[0]),
-                                 month=int(elem["start_date"].split()[0].split('-')[1]),
-                                 day=int(elem["start_date"].split()[0].split('-')[2]),
-                                 hour=int(elem["start_date"].split()[1].split(':')[0]),
-                                 minute=int(elem["start_date"].split()[1].split(':')[1]),
-                                 second=int(elem["start_date"].split()[1].split(':')[2]))
-    return rep.start_date
-
-
-def sort_replacements(elem):
-    return datetime.datetime(year=int(elem["start_date"].split()[0].split('-')[0]),
-                             month=int(elem["start_date"].split()[0].split('-')[1]),
-                             day=int(elem["start_date"].split()[0].split('-')[2]),
-                             hour=int(elem["start_date"].split()[1].split(':')[0]),
-                             minute=int(elem["start_date"].split()[1].split(':')[1]),
-                             second=int(elem["start_date"].split()[1].split(':')[2]))
-
+pprint(table_data_for_admin())
 
 @app.route('/statistic', methods=['POST', 'GET'])
 def show_statistic():
@@ -332,7 +333,8 @@ def register(token):
 
         db_sess.commit()
         return redirect(f'/login/{user.token}')
-    return render_template('register.html', title='Регистрация', form=form, image_path=image_path)
+    return render_template('register.html', title='Регистрация', form=form,
+                           image_path=image_path)
 
 
 @app.route('/user_edit/<int:id>', methods=['GET', 'POST'])
@@ -410,7 +412,8 @@ def user_edit(id):
             db_sess.commit()
             return redirect('/')
         abort(404)
-    return render_template('register.html', title='Редактирование профиля', form=form, level=level,
+    return render_template('register.html', title='Редактирование профиля', form=form,
+                           level=level,
                            image_path=image_path)
 
 
