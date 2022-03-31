@@ -54,25 +54,22 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
-# @app.route('/')
-# def base():
-#     """view table"""
-#     param = {}
-#     file = "show_user.html"
-#     if current_user.is_authenticated:
-#         db_sess = db_session.create_session()
-#         user = db_sess.query(User).filter(User.id == current_user.id).first()
-#
-#         if user.access_level == 1:
-#             param = param_for_user()
-#             file = "show_user.html"
-#         elif user.access_level == 2:
-#             param = param_for_teacher()
-#             file = "show_teacher.html"
-#         elif user.access_level == 3:
-#             param = param_for_admin()
-#             file = "show_admin.html"
-#     return render_template(file, **param)
+@app.route('/')
+def base():
+    """view table"""
+    rows = []
+    header = []
+    if current_user.is_authenticated:
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter(User.id == current_user.id).first()
+
+        if user.access_level == 1:
+            header, rows = table_data_for_user(user.grade)
+        elif user.access_level == 2:
+            header, rows = table_data_for_teacher(user.id)
+        elif user.access_level == 3:
+            header, rows = table_data_for_admin()
+    return render_template("show_table.html", rows=rows, header=header)
 
 
 def table_data_for_user(grade) -> tuple:
@@ -96,8 +93,9 @@ def table_data_for_user(grade) -> tuple:
             replacement = db_sess.query(Replacement).filter(Replacement.lesson == lesson.id).first()
             if replacement:
                 lessons_week[el][int(
-                    lesson.time.split('_')[0])] = f'ЗАМЕНА {lesson.topic} НА {replacement.topic}' \
-                                                  f' В КАБИНЕТЕ {replacement.cabinet}'
+                    lesson.time.split('_')[0])] = (
+                    'replacementText', f'ЗАМЕНА {lesson.topic} НА {replacement.topic}' \
+                                       f' В КАБИНЕТЕ {replacement.cabinet}')
             else:
                 lessons_week[el][
                     int(lesson.time.split('_')[0])] = lesson.topic + ' ' + lesson.cabinet
@@ -137,8 +135,9 @@ def table_data_for_teacher(teacher) -> tuple:
                 key=lambda x: int(x.lessons.time.split('_')[0])):
             lessons_week[el][
                 int(replacement.lessons.time.split('_')[
-                        0])] = f'ЗАМЕНА У {replacement.grade} : ' + replacement.topic +\
-                               ' ' + replacement.cabinet
+                        0])] = (
+                'replacementText', f'ЗАМЕНА У {replacement.grade} : ' + replacement.topic + \
+                ' ' + replacement.cabinet)
 
     min_count = min([min(el.keys(), default=1) for el in lessons_week.values()])
     max_count = max([max(el.keys(), default=1) for el in lessons_week.values()])
@@ -175,7 +174,7 @@ def table_data_for_admin():
                 replacement = db_sess.query(Replacement).filter(Replacement.lesson ==
                                                                 lessons_iter[0].id).first()
                 if replacement:
-                    new_row += [f'ЗАМЕНА НА {replacement.grade}']
+                    new_row += [('replacementText', f'ЗАМЕНА НА {replacement.grade}')]
                 else:
                     new_row += [lessons_iter[0].grade]
             else:
@@ -183,7 +182,6 @@ def table_data_for_admin():
         rows.append(new_row)
     return header, rows
 
-pprint(table_data_for_admin())
 
 @app.route('/statistic', methods=['POST', 'GET'])
 def show_statistic():

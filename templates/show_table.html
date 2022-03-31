@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+    {% if current_user.is_authenticated %}
+        <p>
+            <a class="btn btn-info" href="/statistic">Посмотреть статистику</a>
+        </p>
+        <h1>Расписание</h1>
+
+        <table class="table table-bordered">
+            <thead>
+            <tr>
+                {% for text in header %}
+                    <th scope="col">{{ text }}</th>
+                {% endfor %}
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for row in rows %}
+                <tr>
+                    {% for text in row %}
+                        {% if loop.index == 0 %}
+                            <th scope="row">{{ text }}</th>
+                        {% else %}
+                            {% if text[0] == 'replacementText' %}
+                                <td class="replacementText">{{ text[1] }}</td>
+                            {% else %}
+                                <td>{{ text }}</td>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <h1>Войдите, чтобы увидить расписание</h1>
+    {% endif %}
+{% endblock %}

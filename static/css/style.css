@@ -18,3 +18,7 @@ table {
 table {
    width: 600px;
 }
+
+.replacementText {
+   background-color: orange;
+}
