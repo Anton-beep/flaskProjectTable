@@ -2,16 +2,16 @@
 
 import os
 import datetime
-from itertools import cycle
 from pprint import pprint
 
 import PIL
 
-from flask import Flask, redirect, render_template, request
+from flask import Flask, redirect, render_template, request, send_file
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_restful import abort, Api
 from sqlalchemy import or_
 from werkzeug.utils import secure_filename
+import xlsxwriter
 
 from data.sqlalchemy import db_session
 from data.models.users import User
@@ -70,6 +70,49 @@ def base():
         elif user.access_level == 3:
             header, rows = table_data_for_admin()
     return render_template("show_table.html", rows=rows, header=header)
+
+
+@app.route('/download_table')
+def download_table():
+    """downloads user's table"""
+    if current_user.is_authenticated:
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter(User.id == current_user.id).first()
+
+        if user.access_level == 1:
+            header, rows = table_data_for_user(user.grade)
+        elif user.access_level == 2:
+            header, rows = table_data_for_teacher(user.id)
+        elif user.access_level == 3:
+            header, rows = table_data_for_admin()
+
+        workbook = xlsxwriter.Workbook('test.xlsx')
+        worksheet = workbook.add_worksheet()
+
+        rows = [header] + rows
+
+        for i in range(len(rows)):
+            for j in range(len(rows[i])):
+                if isinstance(rows[i][j], tuple):
+                    if rows[i][j][0] == 'replacementText':
+                        style = {'bg_color': 'orange'}
+                    worksheet.write(i, j, rows[i][j][1], workbook.add_format(style))
+                    worksheet.set_column(i, j, len(rows[i][j][0]) * 18)
+                else:
+                    worksheet.write(i, j, rows[i][j])
+                    worksheet.set_column(i, j, len(rows[i][j]) * 18)
+        workbook.close()
+
+        return send_file('test.xlsx')
+    else:
+        abort(404)
+
+
+def style_excel(val):
+    style = f""""""
+    if 'ЗАМЕНА' in val.split():
+        style += ' background-color: orange;'
+    return style
 
 
 def table_data_for_user(grade) -> tuple:
