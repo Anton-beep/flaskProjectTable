@@ -96,11 +96,11 @@ def download_table():
                 if isinstance(rows[i][j], tuple):
                     if rows[i][j][0] == 'replacementText':
                         style = {'bg_color': 'orange'}
-                    worksheet.write(i, j, rows[i][j][1], workbook.add_format(style))
-                    worksheet.set_column(i, j, len(rows[i][j][0]) * 18)
+                    worksheet.write_string(i, j, rows[i][j][1], workbook.add_format(style))
+                    worksheet.set_column(i, j, 20)
                 else:
-                    worksheet.write(i, j, rows[i][j])
-                    worksheet.set_column(i, j, len(rows[i][j]) * 18)
+                    worksheet.write_string(i, j, rows[i][j])
+                    worksheet.set_column(i, j, 20)
         workbook.close()
 
         return send_file('test.xlsx')
@@ -197,6 +197,13 @@ def table_data_for_admin():
         db_sess.query(User).filter(or_(User.access_level == 2, User.access_level == 3)))]
     rows = list()
 
+    week_days = {
+        'monday': 'понедельник',
+        'tuesday': 'вторник',
+        'wednesday': 'среда',
+        'thursday': 'четверг',
+        'friday': 'пятница'
+    }
     lessons_admin = list(db_sess.query(Lesson))
     lessons_dict = dict()
     for teacher in list(
@@ -206,23 +213,25 @@ def table_data_for_admin():
     min_count = min([int(el.time.split('_')[0]) for el in lessons_admin])
     max_count = max([int(el.time.split('_')[0]) for el in lessons_admin])
 
-    for iter in range(min_count, max_count + 1):
-        new_row = [str(iter)]
-        for teacher in list(
-                db_sess.query(User).filter(or_(User.access_level == 2, User.access_level == 3))):
-            lessons_iter = list(filter(lambda x: x.time.split('_')[0] == str(iter),
-                                       lessons_dict[teacher]))
-
-            if len(lessons_iter) > 0:
-                replacement = db_sess.query(Replacement).filter(Replacement.lesson ==
-                                                                lessons_iter[0].id).first()
-                if replacement:
-                    new_row += [('replacementText', f'ЗАМЕНА НА {replacement.grade}')]
+    for week_day in week_days.keys():
+        for iter in range(min_count, max_count + 1):
+            new_row = [str(iter) + ' ' + week_days[week_day]]
+            for teacher in list(
+                    db_sess.query(User).filter(
+                        or_(User.access_level == 2, User.access_level == 3))):
+                lessons_iter = list(filter(
+                    lambda x: x.time.split('_')[0] == str(iter) and x.time.split('_')[
+                        1] == week_day, lessons_dict[teacher]))
+                if len(lessons_iter) > 0:
+                    replacement = db_sess.query(Replacement).filter(Replacement.lesson ==
+                                                                    lessons_iter[0].id).first()
+                    if replacement:
+                        new_row += [('replacementText', f'ЗАМЕНА НА {replacement.grade}')]
+                    else:
+                        new_row += [lessons_iter[0].grade]
                 else:
-                    new_row += [lessons_iter[0].grade]
-            else:
-                new_row += ['-']
-        rows.append(new_row)
+                    new_row += ['-']
+            rows.append(new_row)
     return header, rows
 
 
