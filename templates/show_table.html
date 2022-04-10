@@ -2,32 +2,87 @@
 
 {% block content %}
     {% if current_user.is_authenticated %}
+        {% if current_user.access_level == 3 %}
+            <script src="/static/js/edit_table.js"></script>
+            <!-- Modal -->
+            <div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog"
+                 aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="ModalLongTitle">Modal title</h5>
+                            <button type="button" class="close" data-dismiss="modal"
+                                    aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form action="" enctype=multipart/form-data method="post">
+                                {{ form.hidden_tag() }}
+                                <p>
+                                    {{ form.teacher.label }}
+                                    {{ form.teacher(class="form-control", type="teacher", id="teacher", readonly="readonly") }}<br>
+                                </p>
+                                <p>
+                                    {{ form.time.label }}
+                                    {{ form.time(class="form-control", type="time_table", id="time", readonly="readonly") }}<br>
+                                </p>
+                                <p>
+                                    {{ form.grade.label }}
+                                    {{ form.grade(class="form-control", type="grade", id="grade") }}<br>
+                                </p>
+                                <p>
+                                    {{ form.topic.label }}
+                                    {{ form.topic(class="form-control", type="topic", id="topic") }}<br>
+                                </p>
+                                <p>
+                                    {{ form.cabinet.label }}
+                                    {{ form.cabinet(class="form-control", type="cabinet", id="cabinet") }}<br>
+                                </p>
+                                <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+                            </form>
+                            <button class="btn btn-danger" id="delete_button" type="submit"
+                                    onclick="delete_lesson()">
+                                Удалить урок
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
         <p>
             <a class="btn btn-info" href="/statistic">Посмотреть статистику</a>
             <a class="btn btn-secondary" href="/download_table">Скачать расписание в файле</a>
+            <button class="hide_element" id="submit_button">Подтвердить
+                изменения
+            </button>
         </p>
         <h1>Расписание</h1>
-
-        <table class="table table-bordered">
+        <table class="table table-bordered" id="table" contenteditable="false">
             <thead>
             <tr>
                 {% for text in header %}
-                    <th scope="col">{{ text }}</th>
+                    <th scope="col" id="header_{{ loop.index }}">{{ text }}</th>
                 {% endfor %}
             </tr>
             </thead>
 
             <tbody>
             {% for row in rows %}
+                {% set row_count = loop.index %}
                 <tr>
                     {% for text in row %}
-                        {% if loop.index == 0 %}
-                            <th scope="row">{{ text }}</th>
+                        {% if loop.index == 1 %}
+                            <th scope="row" id="row_{{ row_count }}">{{ text }}</th>
                         {% else %}
                             {% if text[0] == 'replacementText' %}
-                                <td class="replacementText">{{ text[1] }}</td>
+                                <td class="replacementText"
+                                    onclick="edit_cell(this);"
+                                    id="{{ loop.index }}_{{ row_count }}">{{ text[1] }}</td>
                             {% else %}
-                                <td>{{ text }}</td>
+                                <td onclick="edit_cell(this);"
+                                    id="{{ loop.index }}_{{ row_count }}">{{ text }}</td>
                             {% endif %}
                         {% endif %}
                     {% endfor %}

@@ -9,7 +9,7 @@ import PIL
 from flask import Flask, redirect, render_template, request, send_file
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_restful import abort, Api
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from werkzeug.utils import secure_filename
 import xlsxwriter
 
@@ -25,6 +25,7 @@ from data.API_resources import replacements_resources
 from forms.login import LoginForm
 from forms.register import RegisterForm
 from forms.token_check import TokenForm
+from forms.edit_lesson import EditLessonForm
 
 import init
 
@@ -54,14 +55,50 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
-@app.route('/')
+@app.route('/', methods=['POST', 'GET'])
 def base():
     """view table"""
     rows = []
     header = []
+    form = None
+
     if current_user.is_authenticated:
         db_sess = db_session.create_session()
         user = db_sess.query(User).filter(User.id == current_user.id).first()
+
+        form = EditLessonForm()
+        if form.validate_on_submit() and user.access_level == 3:
+            data = request.form
+            if data:
+                teacher = db_sess.query(User).filter(
+                    User.name == data['teacher'].split()[1],
+                    User.surname == data['teacher'].split()[0]).first()
+                time_db = convert_table_text_to_time(data['time'])
+                lesson_to_edit = db_sess.query(Lesson).filter(
+                    and_(Lesson.time == time_db, Lesson.teacher == teacher.id)).first()
+                if lesson_to_edit:
+                    lesson_to_edit.topic = form.topic.data
+                    lesson_to_edit.grade = form.grade.data
+                    lesson_to_edit.cabinet = form.cabinet.data
+                else:
+                    lesson = Lesson()
+                    lesson.topic = form.topic.data
+                    lesson.grade = form.grade.data
+                    lesson.cabinet = form.cabinet.data
+                    lesson.time = time_db
+                    lesson.teacher = teacher.id
+                    db_sess.add(lesson)
+                db_sess.commit()
+        elif request.method == 'POST' and user.access_level == 3:
+            data = request.json
+            teacher = db_sess.query(User).filter(
+                User.name == data['teacher'].split()[1],
+                User.surname == data['teacher'].split()[0]).first()
+            time_db = convert_table_text_to_time(data['time'])
+            lesson_to_del = db_sess.query(Lesson).filter(
+                and_(Lesson.time == time_db, Lesson.teacher == teacher.id)).first()
+            db_sess.delete(lesson_to_del)
+            db_sess.commit()
 
         if user.access_level == 1:
             header, rows = table_data_for_user(user.grade)
@@ -69,7 +106,22 @@ def base():
             header, rows = table_data_for_teacher(user.id)
         elif user.access_level == 3:
             header, rows = table_data_for_admin()
-    return render_template("show_table.html", rows=rows, header=header)
+
+    return render_template("show_table.html", rows=rows, header=header, form=form)
+
+
+def convert_table_text_to_time(time_table: str):
+    convert_dict = {
+        'понедельник': 'monday',
+        'вторник': 'tuesday',
+        'среда': 'wednesday',
+        'четверг': 'thursday',
+        'пятница': 'friday',
+        'суббота': 'saturday',
+        'воскресенье': 'sunday'
+    }
+    count, week_day = time_table.split()
+    return f'{count}_{convert_dict[week_day]}'
 
 
 @app.route('/download_table')
@@ -193,7 +245,7 @@ def table_data_for_teacher(teacher) -> tuple:
 
 def table_data_for_admin():
     db_sess = db_session.create_session()
-    header = ['Номер урока'] + [teacher.name + ' ' + teacher.surname for teacher in list(
+    header = ['Номер урока'] + [teacher.surname + ' ' + teacher.name for teacher in list(
         db_sess.query(User).filter(or_(User.access_level == 2, User.access_level == 3)))]
     rows = list()
 
@@ -226,9 +278,12 @@ def table_data_for_admin():
                     replacement = db_sess.query(Replacement).filter(Replacement.lesson ==
                                                                     lessons_iter[0].id).first()
                     if replacement:
-                        new_row += [('replacementText', f'ЗАМЕНА НА {replacement.grade}')]
+                        new_row += [('replacementText',
+                                     f'ЗАМЕНА;{replacement.grade};'
+                                     f'{replacement.topic};{replacement.cabinet}')]
                     else:
-                        new_row += [lessons_iter[0].grade]
+                        new_row += [
+                            f'{lessons_iter[0].grade};{lessons_iter[0].topic};{lessons_iter[0].cabinet}']
                 else:
                     new_row += ['-']
             rows.append(new_row)
