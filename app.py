@@ -243,20 +243,12 @@ def show_statistic():
 
     if request.method == 'POST':
         interval = request.form['interval']
-    now = datetime.datetime.now()
+    param = analyze.analyze(interval, current_user.grade,
+                            current_user.access_level, current_user.id)
     try:
-        if interval == 'day':
-            date = now.day
-        elif interval == 'week':
-            mon = now.day - now.weekday()
-            sun = mon + 6
-            date = range(mon, sun + 1)
-        else:
-            date = [now.month]
-
-        param = analyze.analyze(date, current_user.grade,
-                                current_user.access_level, current_user.id)
-    except ValueError:
+        pass
+    except Exception as er:
+        print(er)
         return render_template('statistic.html', title="Статистика", interval=interval,
                                error="Уроков нет на данном промежутке")
 
@@ -267,7 +259,7 @@ def show_statistic():
             GoogleCharts.bar_chart(param)
         elif current_user.access_level == 2:
             replacements = GoogleCharts.area_chart(param)
-    except ValueError:
+    except Exception:
         return render_template('statistic.html', title="Статистика", interval=interval,
                                error_rep="Замен нет на данном промежутке нет", error=None)
     return render_template('statistic.html', title="Статистика", interval=interval,

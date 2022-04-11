@@ -4,82 +4,100 @@ from data.models.lessons import Lesson
 from data.models.replacements import Replacement
 
 import datetime
+import csv
 
 
-def analyze(date, grade, level, user_id):
+def analyze(interval, grade, level, user_id):
     db_sess = db_session.create_session()
 
-    lessons = get_lessons(date, grade, level, user_id)
-    lessons = add_replacements(lessons, grade, level, user_id, date)
+    lessons = get_lessons(interval, grade, level, user_id)
+    lessons = add_replacements(lessons, grade, level, user_id, interval)
 
-    start = [x.start_date.time() for x in lessons]
-    end = [x.end_date.time() for x in lessons]
+    with open('static/time/time.csv', encoding="utf8") as csvfile:
+        reader = list(csv.reader(csvfile, delimiter=';', quotechar='"'))
+
+        start = float('inf')
+        end = 0
+        duration = reader[1][3]
+        for les in lessons:
+            if type(les) == Lesson:
+                start = min(start, int(les.time.split('_')[0]))
+                end = max(end, int(les.time.split('_')[0]))
     param = {
-        "start": str(min(start)),
-        "end": str(max(end)),
-        "duration_total": str(datetime.timedelta(seconds=60 * sum(
-            [60 * end[i].hour + end[i].minute - 60 * start[i].hour - start[i].minute
-             for i in range(len(end))]))),
-        "duration_average": str(datetime.timedelta(seconds=sum([int(
-            (x.end_date - x.start_date).seconds) for x in lessons]) / len(lessons))),
+        "start": reader[start][0], "end": reader[end][1],
+        "duration_total": int(duration.split(':')[1]) * (end - start + 1),
+        "duration_average": duration,
         "grade": ', '.join(list(set([item.grade for item in lessons]))),
         "lesson_total": len(lessons), "chart": {}, "days": {}, "teachers": {},
         "days_teachers": {full_name(db_sess.query(User).filter(User.id == user_id).first()): {}}
     }
-
-    param = edit_chart(lessons, param, level, user_id, date)
+    param = edit_chart(lessons, param, level, user_id, interval)
 
     return param
 
 
-def get_lessons(date, grade, level, user_id):
+def get_lessons(interval, grade, level, user_id):
     db_sess = db_session.create_session()
 
     if level == 3:
         lessons = db_sess.query(Lesson).all()
-    elif grade is None:
-        lessons = db_sess.query(Lesson).filter(Lesson.teacher == user_id)
+    elif level == 2:
+        lessons = db_sess.query(Lesson).filter(Lesson.teacher == user_id).all()
     else:
         lessons = db_sess.query(Lesson).filter(Lesson.grade == grade).all()
 
-    if type(date) == range:
-        lessons = list(filter(lambda x: x.start_date.day in date, lessons))
-    elif type(date) == int:
-        lessons = list(filter(lambda x: x.start_date.day == date, lessons))
-    else:
-        lessons = list(filter(lambda x: x.start_date.month == date[0], lessons))
+    if interval == 'day':
+        day = datetime.datetime.now().strftime('%A').lower()
+        lessons = list(filter(lambda x: day in x.time, lessons))
 
     return lessons
 
 
-def add_replacements(lessons, grade, level, user_id, date):
+def add_replacements(lessons, grade, level, user_id, interval):
     db_sess = db_session.create_session()
-    if grade is None and level == 2:
+    if level == 2:
         rep = db_sess.query(Replacement).filter(Replacement.teacher == user_id).all()
         lessons.extend(rep)
+
+        to_dell = []
+        for i, item in enumerate(lessons):
+            rep = db_sess.query(Replacement).filter(Replacement.lesson == item.id).first()
+            if rep is not None:
+                if rep.start_date.day == datetime.datetime.now().day and interval == 'day':
+                    to_dell.append(db_sess.query(Lesson).filter(Lesson.id == rep.lesson).first())
+                elif interval == 'week':
+                    to_dell.append(db_sess.query(Lesson).filter(Lesson.id == rep.lesson).first())
+        for td in to_dell:
+            try:
+                del lessons[lessons.index(td)]
+            except ValueError:
+                pass
     else:
         for i, item in enumerate(lessons):
             rep = db_sess.query(Replacement).filter(Replacement.lesson == item.id).first()
             if rep is not None:
-                lessons[i] = rep
-    if type(date) == range:
-        lessons = list(filter(lambda x: x.start_date.day in date, lessons))
-    elif type(date) == int:
-        lessons = list(filter(lambda x: x.start_date.day == date, lessons))
-    else:
-        lessons = list(filter(lambda x: x.start_date.month == date[0], lessons))
+                if rep.start_date.day == datetime.datetime.now().day and interval == 'day' and (
+                        level == 3 or grade == rep.grade):
+                    lessons[i] = rep
+                elif interval == "week" and (level == 3 or grade == rep.grade):
+                    lessons[i] = rep
     return lessons
 
 
-def edit_chart(lessons, param, level, user_id, date):
+def edit_chart(lessons, param, level, user_id, interval):
     db_sess = db_session.create_session()
+
     for item in lessons:
         pie_chart = param["chart"].get(item.topic, 0)
-        pie_chart += item.end_date.time().hour * 60 + item.end_date.time().minute \
-                - item.start_date.time().hour * 60 - item.start_date.time().minute
+        pie_chart += int(param["duration_average"].split(':')[1])
 
-        combo_chart = param["days"].get(item.start_date.day, {})
-        combo_chart[item.topic] = combo_chart.get(item.topic, 0) + 1
+        if type(item) == Lesson:
+            combo_chart = param["days"].get(item.time.split('_')[1], {})
+            combo_chart[item.topic] = combo_chart.get(item.topic, 0) + 1
+        else:
+            day = db_sess.query(Lesson).filter(Lesson.id == item.lesson).first()
+            combo_chart = param["days"].get(day.time.split('_')[1], {})
+            combo_chart[item.topic] = combo_chart.get(item.topic, 0) + 1
 
         if type(item) == Replacement:
             teacher = item.teacher
@@ -96,28 +114,26 @@ def edit_chart(lessons, param, level, user_id, date):
             param["teachers"][replacing] = replaced
 
         param["chart"][item.topic] = pie_chart
-        param["days"][item.start_date.day] = combo_chart
+        if type(item) == Lesson:
+            param["days"][item.time.split('_')[1]] = combo_chart
+        else:
+            day = db_sess.query(Lesson).filter(Lesson.id == item.lesson).first()
+            param["days"][day.time.split('_')[1]] = combo_chart
 
     if level == 2:
         name = full_name(db_sess.query(User).filter(User.id == user_id).first())
 
         replace = db_sess.query(Replacement).filter(Replacement.teacher == user_id).all()
-        if type(date) == range:
-            replace = list(filter(lambda x: x.start_date.day in date, replace))
-        elif type(date) == int:
-            replace = list(filter(lambda x: x.start_date.day == date, replace))
-        else:
-            replace = list(filter(lambda x: x.start_date.month == date[0], replace))
+        if interval == 'day':
+            replace = list(filter(lambda x: x.start_date.day ==
+                                            datetime.datetime.now().day, replace))
 
         replaced = db_sess.query(Replacement).all()
         replaced = list(filter(lambda x: db_sess.query(Lesson).filter(
             Lesson.id == x.lesson, Lesson.teacher == user_id).first() is not None, replaced))
-        if type(date) == range:
-            replaced = list(filter(lambda x: x.start_date.day in date, replaced))
-        elif type(date) == int:
-            replaced = list(filter(lambda x: x.start_date.day == date, replaced))
-        else:
-            replaced = list(filter(lambda x: x.start_date.month == date[0], replaced))
+        if interval == 'day':
+            replaced = list(filter(lambda x: x.start_date.day ==
+                                            datetime.datetime.now().day, replaced))
         for item in replace:
             day = item.start_date.day
             rep = param["days_teachers"][name].get(day, {"replace": 0, "replaced": 0})
