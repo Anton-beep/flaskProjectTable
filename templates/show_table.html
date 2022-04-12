@@ -5,12 +5,12 @@
         {% if current_user.access_level == 3 %}
             <script src="/static/js/edit_table.js"></script>
             <!-- Modal -->
-            <div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog"
+            <div class="modal fade" id="lesson_modal" tabindex="-1" role="dialog"
                  aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="ModalLongTitle">Modal title</h5>
+                            <h5 class="modal-title" id="lesson_modal_title"></h5>
                             <button type="button" class="close" data-dismiss="modal"
                                     aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
@@ -18,7 +18,12 @@
                         </div>
                         <div class="modal-body">
                             <form action="" enctype=multipart/form-data method="post">
+                                <label id="lesson_form"></label>
                                 {{ form.hidden_tag() }}
+                                <p>
+                                    {{ form.title.label }}
+                                    {{ form.title(class="form-control", type="title", id="title_form", readonly="readonly") }}<br>
+                                </p>
                                 <p>
                                     {{ form.teacher.label }}
                                     {{ form.teacher(class="form-control", type="teacher", id="teacher", readonly="readonly") }}<br>
@@ -39,11 +44,11 @@
                                     {{ form.cabinet.label }}
                                     {{ form.cabinet(class="form-control", type="cabinet", id="cabinet") }}<br>
                                 </p>
-                                <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+                                <p>{{ form.submit(type="submit", class="btn btn-primary", id="lesson_submit") }}</p>
                             </form>
                             <button class="btn btn-danger" id="delete_button" type="submit"
-                                    onclick="delete_lesson()">
-                                Удалить урок
+                                    onclick="delete_data()">
+                                Удалить
                             </button>
                         </div>
                     </div>
@@ -54,9 +59,20 @@
         <p>
             <a class="btn btn-info" href="/statistic">Посмотреть статистику</a>
             <a class="btn btn-secondary" href="/download_table">Скачать расписание в файле</a>
-            <button class="hide_element" id="submit_button">Подтвердить
-                изменения
-            </button>
+            <label for="set_date"></label>
+            <input type="date" id="set_date" name="trip-start" value="{{ now_day }}">
+            <a class="btn btn-outline-primary" onclick="change_week();">Изменить неделю
+                просмотра</a>
+            <br>
+            {% if current_user.access_level == 3 %}
+                <a>Добавить или изменить замену:</a>
+                <a class="form-check">
+                    <input class="form-check-input" type="checkbox" id="flexCheckDefault"
+                           onclick="edit_flag_replacement(this)">
+                    <label class="form-check-label" for="flexCheckDefault" id="submit_button">
+                        Редактирование замен</label>
+                </a>
+            {% endif %}
         </p>
         <h1>Расписание</h1>
         <table class="table table-bordered" id="table" contenteditable="false">
