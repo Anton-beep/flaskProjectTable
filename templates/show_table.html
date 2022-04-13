@@ -58,11 +58,13 @@
 
         <p>
             <a class="btn btn-info" href="/statistic">Посмотреть статистику</a>
-            <a class="btn btn-secondary" href="/download_table">Скачать расписание в файле</a>
+            <a class="btn btn-secondary" href="/download_table">Скачать расписание в файле
+            </a>
             <label for="set_date"></label>
             <input type="date" id="set_date" name="trip-start" value="{{ now_day }}">
             <a class="btn btn-outline-primary" onclick="change_week();">Изменить неделю
-                просмотра</a>
+                просмотра
+            </a>
             <br>
             {% if current_user.access_level == 3 %}
                 <a>Добавить или изменить замену:</a>
@@ -71,6 +73,9 @@
                            onclick="edit_flag_replacement(this)">
                     <label class="form-check-label" for="flexCheckDefault" id="submit_button">
                         Редактирование замен</label>
+                </a>
+                <a class="btn btn-info" href="/register">Заргестрировать нового
+                    пользователя
                 </a>
             {% endif %}
         </p>

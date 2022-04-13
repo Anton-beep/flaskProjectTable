@@ -2,6 +2,7 @@
 import csv
 import os
 import datetime
+import secrets
 from pprint import pprint
 
 import PIL
@@ -24,9 +25,9 @@ from data.API_resources import replacements_resources
 
 from forms.login import LoginForm
 from forms.register import RegisterForm
+from forms.register_admin import RegisterAdminForm
 from forms.token_check import TokenForm
 from forms.edit_lesson import EditLessonForm
-from forms.edit_replacement import EditReplacementForm
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'Church_Of_Saint_Floppa'
@@ -196,6 +197,71 @@ def get_week_from_day(day):
 
 now_day = datetime.datetime.today().strftime('%Y-%m-%d')
 table_week = get_week_from_day(datetime.datetime.today())
+
+
+
+@app.route('/register', methods=['POST', 'GET'])
+def admin_register():
+    """admin registers new users"""
+    if current_user.is_authenticated:
+        form = RegisterAdminForm()
+
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter(User.id == current_user.id).first()
+        if user.access_level == 3:
+            if form.validate_on_submit():
+                # check new user in db
+                set_users = set(db_sess.query(User))
+                if form.grade.data:
+                    grade_users = db_sess.query(User).filter(User.grade == form.grade.data)
+                    if grade_users:
+                        set_users = set(grade_users) & set_users
+                if form.surname.data:
+                    surname_users = db_sess.query(User).filter(
+                        User.grade == form.surname.data).first()
+                    if surname_users:
+                        set_users = set(surname_users) & set_users
+                if form.name.data:
+                    name_users = db_sess.query(User).filter(User.name == form.name.data)
+                    if name_users:
+                        set_users = set(name_users) & set_users
+                if form.patronymic.data:
+                    patronymic_users = db_sess.query(User).filter(
+                        User.patronymic == form.patronymic.data)
+                    if patronymic_users:
+                        set_users = set(patronymic_users) & set_users
+                if form.email.data:
+                    email_users = set(db_sess.query(User).filter(User.email == form.email.data))
+                    if email_users:
+                        set_users = set(email_users) & set_users
+                if len(set_users) > 0:
+                    message = 'Такой пользователь уже есть'
+                elif form.email.data and email_users:
+                    message = 'Пользователь с такой же почтой уже существует'
+                else:
+                    # generate token for new user and write in db
+
+                    user = User()
+                    if form.name.data:
+                        user.name = form.name.data
+                    if form.surname.data:
+                        user.surname = form.surname.data
+                    if form.patronymic.data:
+                        user.patronymic = form.patronymic.data
+                    if form.grade.data:
+                        user.grade = form.grade.data
+                    if form.email.data:
+                        user.email = form.email.data
+
+                    token = secrets.token_urlsafe(32)
+                    user.token = token
+                    db_sess.add(user)
+                    db_sess.commit()
+                    message = f'Токен этого пользователя: {token}'
+                return render_template('register_admin.html', form=form, message=message)
+        # render register form
+        return render_template('register_admin.html', form=form)
+    abort(403, message="Access denied")
 
 
 @app.route('/download_table')
