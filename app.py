@@ -1,8 +1,6 @@
 """main"""
 
 import os
-import datetime
-from pprint import pprint
 
 import PIL
 
