@@ -19,7 +19,7 @@ def get_access_level(token: str) -> str:
     if user:
         return user.access_level
     else:
-        abort(403, message=f"Unknown api-key")
+        abort(403, message="Unknown api-key")
 
 
 parser_oneEl = reqparse.RequestParser()
@@ -39,7 +39,7 @@ class UsersResource(Resource):
             if users.token == args['api-key']:
                 return flask.jsonify({'users': users.to_dict()})
             else:
-                abort(403, message=f"Access denied")
+                abort(403, message="Access denied")
 
     def delete(self, users_id):
         args = parser_oneEl.parse_args()
@@ -52,7 +52,7 @@ class UsersResource(Resource):
             session.commit()
             return flask.jsonify({'success': 'OK'})
         else:
-            abort(403, message=f"Access denied")
+            abort(403, message="Access denied")
 
 
 parser = reqparse.RequestParser()
@@ -67,6 +67,7 @@ parser.add_argument('hashed_password', required=True, type=str)
 parser.add_argument('modified_date', required=True, type=str)
 parser.add_argument('access_level', required=True, type=int)
 parser.add_argument('token', required=True, type=str)
+parser.add_argument('image', required=True, type=str, default='/static/img/default.png')
 
 
 class UserListResource(Resource):
@@ -79,13 +80,17 @@ class UserListResource(Resource):
             return flask.jsonify({'users': [item.to_dict()
                                             for item in users]})
         else:
-            abort(403, message=f"Access denied")
+            abort(403, message="Access denied")
 
     def post(self):
         args = parser.parse_args()
         level = get_access_level(args['api-key'])
         if level == 3:
             session = db_session.create_session()
+            # check token
+            if session.query(User).filter(User.token == args['token']).first():
+                return flask.jsonify({'token': 'UNIQUE constraint failed'})
+
             users = User(
                 id=args['id'],
                 name=args['name'],
@@ -102,4 +107,4 @@ class UserListResource(Resource):
             session.commit()
             return flask.jsonify({'success': 'OK'})
         else:
-            abort(403, message=f"Access denied")
+            abort(403, message="Access denied")

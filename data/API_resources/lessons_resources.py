@@ -69,8 +69,7 @@ parser.add_argument('topic', required=True, type=str)
 parser.add_argument('grade', required=True, type=str)
 parser.add_argument('teacher', required=True, type=int)
 parser.add_argument('cabinet', required=True, type=str)
-parser.add_argument('start_date', required=True, type=str)
-parser.add_argument('end_date', required=True, type=str)
+parser.add_argument('time', required=True, type=str)
 
 
 class LessonsListResource(Resource):
@@ -108,8 +107,7 @@ class LessonsListResource(Resource):
                 grade=args['grade'],
                 teacher=args['teacher'],
                 cabinet=args['cabinet'],
-                start_date=dt.strptime(args['start_date'], '%Y-%m-%d %H:%M:%S'),
-                end_date=dt.strptime(args['end_date'], '%Y-%m-%d %H:%M:%S'),
+                time=args['time']
             )
             session.add(lessons)
             session.commit()
