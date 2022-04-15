@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <script src="/static/js/edit_users.js"></script>
+
+    <!-- Modal -->
+    <div class="modal fade" id="user_edit_modal" tabindex="-1" role="dialog"
+         aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="user_edit_modal_title">Изменение пользователя</h5>
+                    <button type="button" class="close" data-dismiss="modal"
+                            aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form action="" method="POST">
+                        {{ form.hidden_tag() }}
+                        <p>
+                            {{ form.id.label }}
+                            {{ form.id(class="form-control", type="id", id="id_form", readonly="readonly") }}
+                        </p>
+                        <p>
+                            {{ form.name.label }}
+                            {{ form.name(class="form-control", type="name", id="name") }}<br>
+                        </p>
+                        <p>
+                            {{ form.surname.label }}
+                            {{ form.surname(class="form-control", type="surname", id="surname") }}<br>
+                        </p>
+                        <p>
+                            {{ form.patronymic.label }}
+                            {{ form.patronymic(class="form-control", type="patronymic", id="patronymic") }}<br>
+                        </p>
+                        <p>
+                            {{ form.grade.label }}
+                            {{ form.grade(class="form-control", type="grade", id="grade") }}<br>
+                        </p>
+                        <p>
+                            {{ form.email.label }}
+                            {{ form.email(class="form-control", type="email", id="email") }}<br>
+                        </p>
+                        <p>
+                            {{ form.access_level.label }}
+                            {{ form.access_level(class="form-control", type="access_level", id="access_level") }}<br>
+                        </p>
+                        <p>
+                            {{ form.token.label }}
+                            {{ form.token(class="form-control", type="token", id="token") }}<br>
+                        </p>
+                        <p>
+                            {{ form.password.label }}
+                            {{ form.password(class="form-control", type="password", id="password") }}
+                        </p>
+                        <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+                        <ul class="errors">
+                            {% for error in form.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </form>
+                    <button class="btn btn-danger" id="delete_button" type="button"
+                            onclick="delete_data()">
+                        Удалить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a class="btn btn-info" href="/register">Заргестрировать нового
+        пользователя
+    </a>
+    <a class="btn btn-info" href="/">Вернутся на главную страницу
+    </a>
+
+    <table class="table table-bordered" id="table" contenteditable="false">
+        <thead>
+        <tr>
+            {% for text in header %}
+                <th scope="col" id="header_{{ loop.index }}">{{ text }}</th>
+            {% endfor %}
+        </tr>
+        </thead>
+
+        <tbody>
+
+        {% for row in rows %}
+            {% set row_count = loop.index %}
+            <tr>
+                {% for text in row %}
+                    {% if loop.index == 1 %}
+                        <th scope="row" id="row_{{ row_count }}">{{ text }}</th>
+                    {% else %}
+                        <td onclick="edit_user(this);"
+                            id="cell{{ loop.index }}_{{ row_count }}">{{ text }}</td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+        {% endfor %}
+
+        </tbody>
+    </table>
+{% endblock %}
