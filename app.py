@@ -1,13 +1,16 @@
 """main"""
 
 import os
+import secrets
+from pprint import pprint
+import datetime
 
 import PIL
 
 from flask import Flask, redirect, render_template, request, send_file
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_restful import abort, Api
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from werkzeug.utils import secure_filename
 import xlsxwriter
 
@@ -22,9 +25,10 @@ from data.API_resources import replacements_resources
 
 from forms.login import LoginForm
 from forms.register import RegisterForm
+from forms.register_admin import RegisterAdminForm
 from forms.token_check import TokenForm
-
-import init
+from forms.edit_lesson import EditLessonForm
+from forms.edit_users import EditUsersForm
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'Church_Of_Saint_Floppa'
@@ -52,22 +56,268 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
-@app.route('/')
+@app.route('/', methods=['POST', 'GET'])
 def base():
     """view table"""
+    global now_day, table_week
     rows = []
     header = []
+    form = None
+    form_replacement = None
+
     if current_user.is_authenticated:
         db_sess = db_session.create_session()
         user = db_sess.query(User).filter(User.id == current_user.id).first()
 
+        form = EditLessonForm()
+        if form.validate_on_submit() and user.access_level == 3:
+            data = request.form
+            if data:
+                if data['title'] == 'Изменение/Создание замены':
+                    # reaplacement
+                    teacher = db_sess.query(User).filter(
+                        User.name == data['teacher'].split()[1],
+                        User.surname == data['teacher'].split()[0]).first()
+                    time_db = convert_table_text_to_time(data['time'])
+                    # find lessons
+                    lessons_time = db_sess.query(Lesson).filter(
+                        Lesson.time == time_db
+                    )
+                    replacements_time = list()
+                    bib = list(lessons_time)
+                    for lesson in lessons_time:
+                        rep = db_sess.query(Replacement).filter(
+                            Replacement.lesson == lesson.id).first()
+                        if rep:
+                            replacements_time.append(rep)
+                    replacement_to_edit = None
+                    if replacements_time:
+                        for replacement in replacements_time:
+                            if replacement.teacher == teacher.id:
+                                replacement_to_edit = replacement
+                                break
+
+                    if replacement_to_edit:
+                        replacement_to_edit.topic = form.topic.data
+                        replacement_to_edit.grade = form.grade.data
+                        replacement_to_edit.cabinet = form.cabinet.data
+                    else:
+                        replacement = Replacement()
+                        replacement.topic = form.topic.data
+                        replacement.grade = form.grade.data
+                        replacement.cabinet = form.cabinet.data
+                        replacement.time = time_db
+                        replacement.teacher = teacher.id
+                        replacement.start_date = table_week[0]
+                        replacement.end_date = table_week[1]
+                        # find lesson without reps
+                        for lesson in lessons_time:
+                            if db_sess.query(Replacement).filter(
+                                    Replacement.lesson == lesson.id).first() is None:
+                                replacement.lesson = lesson.id
+                                break
+                        db_sess.add(replacement)
+                    db_sess.commit()
+                else:
+                    # lesson
+                    time_db = convert_table_text_to_time(data['time'])
+                    teacher = db_sess.query(User).filter(
+                        User.name == data['teacher'].split()[1],
+                        User.surname == data['teacher'].split()[0]).first()
+                    lesson_to_edit = db_sess.query(Lesson).filter(
+                        and_(Lesson.time == time_db, Lesson.teacher == teacher.id)).first()
+                    if lesson_to_edit:
+                        lesson_to_edit.topic = form.topic.data
+                        lesson_to_edit.grade = form.grade.data
+                        lesson_to_edit.cabinet = form.cabinet.data
+                    else:
+                        lesson = Lesson()
+                        lesson.topic = form.topic.data
+                        lesson.grade = form.grade.data
+                        lesson.cabinet = form.cabinet.data
+                        lesson.time = time_db
+                        lesson.teacher = teacher.id
+                        db_sess.add(lesson)
+                    db_sess.commit()
+        elif request.method == 'POST' and user.access_level == 3:
+            data = request.json
+            if data['message'] == 'delete lesson':
+                teacher = db_sess.query(User).filter(
+                    User.name == data['teacher'].split()[1],
+                    User.surname == data['teacher'].split()[0]).first()
+                time_db = convert_table_text_to_time(data['time'])
+                lesson_to_del = db_sess.query(Lesson).filter(
+                    and_(Lesson.time == time_db, Lesson.teacher == teacher.id)).first()
+                db_sess.delete(lesson_to_del)
+                db_sess.commit()
+            elif data['message'] == 'delete replacement':
+                teacher = db_sess.query(User).filter(
+                    User.name == data['teacher'].split()[1],
+                    User.surname == data['teacher'].split()[0]).first()
+                time_db = convert_table_text_to_time(data['time'])
+                lesson_to_del = db_sess.query(Lesson).filter(
+                    and_(Lesson.time == time_db, Lesson.teacher == teacher.id)).first()
+                db_sess.delete(lesson_to_del)
+                db_sess.commit()
+            elif data['message'] == 'new week':
+                now_day = datetime.datetime.strptime(data['day'], '%Y-%m-%d')
+                table_week = get_week_from_day(now_day)
+                now_day = now_day.strftime('%Y-%m-%d')
+
         if user.access_level == 1:
-            header, rows = table_data_for_user(user.grade)
+            header, rows = table_data_for_user(user.grade, table_week)
         elif user.access_level == 2:
-            header, rows = table_data_for_teacher(user.id)
+            header, rows = table_data_for_teacher(user.id, table_week)
         elif user.access_level == 3:
-            header, rows = table_data_for_admin()
-    return render_template("show_table.html", rows=rows, header=header)
+            header, rows = table_data_for_admin(table_week)
+
+    return render_template("show_table.html", rows=rows, header=header, form=form,
+                           form_replacement=form_replacement, now_day=now_day)
+
+
+@app.route('/users', methods=['POST', 'GET'])
+def users():
+    if current_user.access_level == 3:
+        form = EditUsersForm()
+
+        db_sess = db_session.create_session()
+
+        if form.validate_on_submit():
+            user_to_edit = db_sess.query(User).filter(User.id == int(form.id.data)).first()
+            if form.token.data != '':
+                user_to_edit.token = form.token.data
+            if form.grade.data != '':
+                user_to_edit.grade = form.grade.data
+            if form.access_level.data != '':
+                user_to_edit.access_level = form.access_level.data
+            if form.surname.data != '':
+                user_to_edit.surname = form.surname.data
+            if form.name.data != '':
+                user_to_edit.name = form.name.data
+            if form.patronymic.data != '':
+                user_to_edit.patronymic = form.patronymic.data
+            if form.email.data != '':
+                user_to_edit.email = form.email.data
+            db_sess.add(user_to_edit)
+            db_sess.commit()
+
+        elif request.method == 'POST' and current_user.access_level == 3:
+            data = request.json
+            if data['message'] == 'delete user':
+                user_to_del = db_sess.query(User).filter(User.id == int(data['user'])).first()
+                db_sess.delete(user_to_del)
+                db_sess.commit()
+
+        header, rows = all_users_table()
+        return render_template("all_users.html", rows=rows, header=header, form=form)
+    abort(403, message="Access denied")
+
+
+def all_users_table():
+    """returns header and rows with all users"""
+    header = ['id', 'имя', 'фамилия', 'отчество', 'класс', 'email', 'уровень доступа',
+              'токен (ключ)']
+
+    db_sess = db_session.create_session()
+    users = list(db_sess.query(User))
+    rows = list()
+    for user in users:
+        row = [user.id, user.name, user.surname, user.patronymic, user.grade, user.email,
+               user.access_level, user.token]
+        row = ['-' if el is None else el for el in row]
+        rows.append(row)
+
+    return header, rows
+
+
+def convert_table_text_to_time(time_table: str):
+    convert_dict = {
+        'понедельник': 'monday',
+        'вторник': 'tuesday',
+        'среда': 'wednesday',
+        'четверг': 'thursday',
+        'пятница': 'friday',
+        'суббота': 'saturday',
+        'воскресенье': 'sunday'
+    }
+    count, week_day = time_table.split()
+    return f'{count}_{convert_dict[week_day]}'
+
+
+def get_week_from_day(day):
+    week_num = day.weekday()
+    start_week_day = day - datetime.timedelta(days=week_num)
+    end_week_day = start_week_day + datetime.timedelta(days=6)
+    return start_week_day, end_week_day
+
+
+now_day = datetime.datetime.today().strftime('%Y-%m-%d')
+table_week = get_week_from_day(datetime.datetime.today())
+
+
+@app.route('/register', methods=['POST', 'GET'])
+def admin_register():
+    """admin registers new users"""
+    if current_user.is_authenticated:
+        form = RegisterAdminForm()
+
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter(User.id == current_user.id).first()
+        if user.access_level == 3:
+            if form.validate_on_submit():
+                # check new user in db
+                set_users = set(db_sess.query(User))
+                if form.grade.data:
+                    grade_users = db_sess.query(User).filter(User.grade == form.grade.data)
+                    if grade_users:
+                        set_users = set(grade_users) & set_users
+                if form.surname.data:
+                    surname_users = db_sess.query(User).filter(
+                        User.grade == form.surname.data)
+                    if surname_users:
+                        set_users = set(surname_users) & set_users
+                if form.name.data:
+                    name_users = db_sess.query(User).filter(User.name == form.name.data)
+                    if name_users:
+                        set_users = set(name_users) & set_users
+                if form.patronymic.data:
+                    patronymic_users = db_sess.query(User).filter(
+                        User.patronymic == form.patronymic.data)
+                    if patronymic_users:
+                        set_users = set(patronymic_users) & set_users
+                if form.email.data:
+                    email_users = set(db_sess.query(User).filter(User.email == form.email.data))
+                    if email_users:
+                        set_users = set(email_users) & set_users
+                if len(set_users) > 0:
+                    message = 'Такой пользователь уже есть'
+                elif form.email.data and email_users:
+                    message = 'Пользователь с такой же почтой уже существует'
+                else:
+                    # generate token for new user and write in db
+
+                    user = User()
+                    if form.name.data:
+                        user.name = form.name.data
+                    if form.surname.data:
+                        user.surname = form.surname.data
+                    if form.patronymic.data:
+                        user.patronymic = form.patronymic.data
+                    if form.grade.data:
+                        user.grade = form.grade.data
+                    if form.email.data:
+                        user.email = form.email.data
+                    user.access_level = form.access_level.data
+
+                    token = secrets.token_urlsafe(32)
+                    user.token = token
+                    db_sess.add(user)
+                    db_sess.commit()
+                    message = f'Токен этого пользователя: {token}'
+                return render_template('register_admin.html', form=form, message=message)
+        # render register form
+        return render_template('register_admin.html', form=form)
+    abort(403, message="Access denied")
 
 
 @app.route('/download_table')
@@ -78,11 +328,11 @@ def download_table():
         user = db_sess.query(User).filter(User.id == current_user.id).first()
 
         if user.access_level == 1:
-            header, rows = table_data_for_user(user.grade)
+            header, rows = table_data_for_user(user.grade, table_week)
         elif user.access_level == 2:
-            header, rows = table_data_for_teacher(user.id)
+            header, rows = table_data_for_teacher(user.id, table_week)
         elif user.access_level == 3:
-            header, rows = table_data_for_admin()
+            header, rows = table_data_for_admin(table_week)
 
         workbook = xlsxwriter.Workbook('test.xlsx')
         worksheet = workbook.add_worksheet()
@@ -113,7 +363,7 @@ def style_excel(val):
     return style
 
 
-def table_data_for_user(grade) -> tuple:
+def table_data_for_user(grade, week) -> tuple:
     """returns header and rows"""
     header = ['Номер урока', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
     rows = list()
@@ -133,10 +383,11 @@ def table_data_for_user(grade) -> tuple:
                              key=lambda x: int(x.time.split('_')[0])):
             replacement = db_sess.query(Replacement).filter(Replacement.lesson == lesson.id).first()
             if replacement:
-                lessons_week[el][int(
-                    lesson.time.split('_')[0])] = (
-                    'replacementText', f'ЗАМЕНА {lesson.topic} НА {replacement.topic}' \
-                                       f' В КАБИНЕТЕ {replacement.cabinet}')
+                if week[0] < replacement.end_date and week[1] > replacement.start_date:
+                    lessons_week[el][int(
+                        lesson.time.split('_')[0])] = (
+                        'replacementText', f'ЗАМЕНА {lesson.topic} НА {replacement.topic}' \
+                                           f' В КАБИНЕТЕ {replacement.cabinet}')
             else:
                 lessons_week[el][
                     int(lesson.time.split('_')[0])] = lesson.topic + ' ' + lesson.cabinet
@@ -150,7 +401,7 @@ def table_data_for_user(grade) -> tuple:
     return header, rows
 
 
-def table_data_for_teacher(teacher) -> tuple:
+def table_data_for_teacher(teacher, week) -> tuple:
     """returns header and rows"""
     header = ['Номер урока', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
     rows = list()
@@ -174,11 +425,12 @@ def table_data_for_teacher(teacher) -> tuple:
         for replacement in sorted(
                 filter(lambda x: x.lessons.time.split('_')[1] == el, replacements_teacher),
                 key=lambda x: int(x.lessons.time.split('_')[0])):
-            lessons_week[el][
-                int(replacement.lessons.time.split('_')[
-                        0])] = (
-                'replacementText', f'ЗАМЕНА У {replacement.grade} : ' + replacement.topic + \
-                ' ' + replacement.cabinet)
+            if week[0] < replacement.end_date and week[1] > replacement.start_date:
+                lessons_week[el][
+                    int(replacement.lessons.time.split('_')[
+                            0])] = (
+                    'replacementText', f'ЗАМЕНА У {replacement.grade} : ' + replacement.topic + \
+                    ' ' + replacement.cabinet)
 
     min_count = min([min(el.keys(), default=1) for el in lessons_week.values()])
     max_count = max([max(el.keys(), default=1) for el in lessons_week.values()])
@@ -189,9 +441,9 @@ def table_data_for_teacher(teacher) -> tuple:
     return header, rows
 
 
-def table_data_for_admin():
+def table_data_for_admin(week):
     db_sess = db_session.create_session()
-    header = ['Номер урока'] + [teacher.name + ' ' + teacher.surname for teacher in list(
+    header = ['Номер урока'] + [teacher.surname + ' ' + teacher.name for teacher in list(
         db_sess.query(User).filter(or_(User.access_level == 2, User.access_level == 3)))]
     rows = list()
 
@@ -203,7 +455,7 @@ def table_data_for_admin():
         'friday': 'пятница'
     }
     lessons_admin = list(db_sess.query(Lesson))
-    lessons_dict = dict()
+    lessons_dict = {}
     for teacher in list(
             db_sess.query(User).filter(or_(User.access_level == 2, User.access_level == 3))):
         lessons_dict[teacher] = db_sess.query(Lesson).filter(Lesson.teacher == teacher.id)
@@ -224,13 +476,35 @@ def table_data_for_admin():
                     replacement = db_sess.query(Replacement).filter(Replacement.lesson ==
                                                                     lessons_iter[0].id).first()
                     if replacement:
-                        new_row += [('replacementText', f'ЗАМЕНА НА {replacement.grade}')]
+                        if week[0] < replacement.end_date and week[1] > replacement.start_date:
+                            new_row += [('replacementText',
+                                         f'ЗАМЕНА;{replacement.grade};'
+                                         f'{replacement.topic};{replacement.cabinet};')]
                     else:
-                        new_row += [lessons_iter[0].grade]
+                        new_row += [
+                            f'{lessons_iter[0].grade};{lessons_iter[0].topic};'
+                            f'{lessons_iter[0].cabinet}']
                 else:
                     new_row += ['-']
             rows.append(new_row)
     return header, rows
+
+
+def dateTime_html_format(datetime_data):
+    months_eng_to_rus = {
+        'Jan': 'Янв',
+        'Feb': 'Фев',
+        'Mar': 'Мар',
+        'Apr': 'Апр',
+        'May': 'Май',
+        'Jul': 'Июл',
+        'Aug': 'Авг',
+        'Sep': 'Сен',
+        'Oct': 'Окт',
+        'Nov': 'Ноя',
+        'Dec': 'Дек'
+    }
+    return datetime_data.strftime('%d.%m %H:%M')
 
 
 @app.route('/statistic', methods=['POST', 'GET'])

@@ -1,24 +1,44 @@
 
 table {
-   border: 1px solid grey;
+    border: 1px solid grey;
 }
 
 th {
-   border: 1px solid grey;
+    border: 1px solid grey;
 }
 
 td {
-   border: 1px solid grey;
+    border: 1px solid grey;
 }
 
 table {
-   width: 100%;
+    width: 100%;
 }
 
 table {
-   width: 600px;
+    width: 600px;
 }
 
 .replacementText {
-   background-color: orange;
+    background-color: orange;
+}
+
+.hide_element {
+    display: none;
+}
+
+.appear_element {
+    display: inline;
+    animation: appear;
+    animation-duration: 5s;
+}
+
+@keyframes appear {
+    0%,
+    99% {
+        max-height: 0;
+    }
+    100% {
+        max-height: 999px;
+    }
 }
