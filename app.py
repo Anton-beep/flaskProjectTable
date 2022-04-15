@@ -28,6 +28,7 @@ from forms.register import RegisterForm
 from forms.register_admin import RegisterAdminForm
 from forms.token_check import TokenForm
 from forms.edit_lesson import EditLessonForm
+from forms.edit_users import EditUsersForm
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'Church_Of_Saint_Floppa'
@@ -174,6 +175,61 @@ def base():
                            form_replacement=form_replacement, now_day=now_day)
 
 
+@app.route('/users', methods=['POST', 'GET'])
+def users():
+    if current_user.access_level == 3:
+        form = EditUsersForm()
+
+        db_sess = db_session.create_session()
+
+        if form.validate_on_submit():
+            user_to_edit = db_sess.query(User).filter(User.id == int(form.id.data)).first()
+            if form.token.data != '':
+                user_to_edit.token = form.token.data
+            if form.grade.data != '':
+                user_to_edit.grade = form.grade.data
+            if form.access_level.data != '':
+                user_to_edit.access_level = form.access_level.data
+            if form.surname.data != '':
+                user_to_edit.surname = form.surname.data
+            if form.name.data != '':
+                user_to_edit.name = form.name.data
+            if form.patronymic.data != '':
+                user_to_edit.patronymic = form.patronymic.data
+            if form.email.data != '':
+                user_to_edit.email = form.email.data
+            db_sess.add(user_to_edit)
+            db_sess.commit()
+
+        elif request.method == 'POST' and current_user.access_level == 3:
+            data = request.json
+            if data['message'] == 'delete user':
+                user_to_del = db_sess.query(User).filter(User.id == int(data['user'])).first()
+                db_sess.delete(user_to_del)
+                db_sess.commit()
+
+        header, rows = all_users_table()
+        return render_template("all_users.html", rows=rows, header=header, form=form)
+    abort(403, message="Access denied")
+
+
+def all_users_table():
+    """returns header and rows with all users"""
+    header = ['id', 'имя', 'фамилия', 'отчество', 'класс', 'email', 'уровень доступа',
+              'токен (ключ)']
+
+    db_sess = db_session.create_session()
+    users = list(db_sess.query(User))
+    rows = list()
+    for user in users:
+        row = [user.id, user.name, user.surname, user.patronymic, user.grade, user.email,
+               user.access_level, user.token]
+        row = ['-' if el is None else el for el in row]
+        rows.append(row)
+
+    return header, rows
+
+
 def convert_table_text_to_time(time_table: str):
     convert_dict = {
         'понедельник': 'monday',
@@ -199,7 +255,6 @@ now_day = datetime.datetime.today().strftime('%Y-%m-%d')
 table_week = get_week_from_day(datetime.datetime.today())
 
 
-
 @app.route('/register', methods=['POST', 'GET'])
 def admin_register():
     """admin registers new users"""
@@ -218,7 +273,7 @@ def admin_register():
                         set_users = set(grade_users) & set_users
                 if form.surname.data:
                     surname_users = db_sess.query(User).filter(
-                        User.grade == form.surname.data).first()
+                        User.grade == form.surname.data)
                     if surname_users:
                         set_users = set(surname_users) & set_users
                 if form.name.data:
@@ -252,6 +307,7 @@ def admin_register():
                         user.grade = form.grade.data
                     if form.email.data:
                         user.email = form.email.data
+                    user.access_level = form.access_level.data
 
                     token = secrets.token_urlsafe(32)
                     user.token = token

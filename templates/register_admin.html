@@ -2,6 +2,8 @@
 
 {% block content %}
     {% if current_user.access_level == 3 %}
+        <a class="btn btn-info" href="/">Вернутся на главную страницу
+        </a>
         <h1>{{ title }}</h1>
         <form action="" enctype=multipart/form-data method="post">
             {{ form.hidden_tag() }}
@@ -20,7 +22,7 @@
                 {% endfor %}
             <p>
                 {{ form.access_level.label }}<br>
-                {{ form.access_level(class="form-control", type="access_level") }}<br>
+                {{ form.access_level(class="form-control", type="select") }}<br>
                 {% for error in form.access_level.errors %}
                     <div class="alert alert-danger" role="alert">
                         {{ error }}

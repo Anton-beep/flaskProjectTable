@@ -3,12 +3,14 @@ from wtforms.validators import DataRequired
 from flask_wtf import FlaskForm
 
 
-class RegisterAdminForm(FlaskForm):
+class EditUsersForm(FlaskForm):
+    id = StringField('id')
+    token = StringField('Токен')
     grade = StringField('Класс')
-    access_level = SelectField('Уровень доступа', choices=[(3, 3), (2, 2), (1, 1)],
-                               validators=[DataRequired()], default=1)
+    access_level = SelectField('Уровень доступа', choices=[(3, 3), (2, 2), (1, 1)])
     surname = StringField('Фамилия')
     name = StringField('Имя')
     patronymic = StringField('Отчество')
     email = EmailField('Почта')
-    submit = SubmitField('Зарегестрировать пользователя')
+    password = PasswordField('Пароль')
+    submit = SubmitField('Сохранить')
