@@ -25,8 +25,12 @@
                                     {{ form.title(class="form-control", type="title", id="title_form", readonly="readonly") }}<br>
                                 </p>
                                 <p>
+                                    {{ form.rep_teacher.label(hidden="true") }}
+                                    {{ form.rep_teacher(class="form-control", type="text", id="rep_teacher", hidden="true", value="null", readonly="readonly") }}
+                                </p>
+                                <p>
                                     {{ form.teacher.label }}
-                                    {{ form.teacher(class="form-control", type="teacher", id="teacher", readonly="readonly") }}<br>
+                                    {{ form.teacher(class="form-control", id="teacher") }}<br>
                                 </p>
                                 <p>
                                     {{ form.time.label }}
@@ -44,9 +48,9 @@
                                     {{ form.cabinet.label }}
                                     {{ form.cabinet(class="form-control", type="cabinet", id="cabinet") }}<br>
                                 </p>
-                                <p>{{ form.submit(type="submit", class="btn btn-primary", id="lesson_submit") }}</p>
+                                <p>{{ form.submit(type="submit", class="btn btn-primary", id="lesson_submit", onclick='document.getElementById("teacher").disabled = false;') }}</p>
                             </form>
-                            <button class="btn btn-danger" id="delete_button" type="submit"
+                            <button class="btn btn-danger" id="delete_button"
                                     onclick="delete_data()">
                                 Удалить
                             </button>

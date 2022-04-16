@@ -5,14 +5,19 @@ function edit_cell(element) {
     let replacement_num;
     if (flag_replacement && element.innerText.length > 2) {
         $('#lesson_modal').modal();
-    } else {
+        document.getElementById("teacher").disabled = false;
+        document.getElementById("rep_teacher").hidden = false;
+    } else if (!flag_replacement) {
         $('#lesson_modal').modal();
+        document.getElementById("teacher").disabled = true;
+        document.getElementById("rep_teacher").hidden = true;
     }
 
     let teacher = document.getElementById("header_" + element.id.split('_')[0]).innerText;
     let time = document.getElementById("row_" + element.id.split('_')[1]).innerText;
 
     document.getElementById("teacher").value = teacher;
+    document.getElementById("rep_teacher").value = teacher;
     document.getElementById("time").value = time;
     if (flag_replacement) {
         if (element.innerText.split(';')[0] === 'ЗАМЕНА') {
@@ -60,6 +65,7 @@ function send_data(data) {
 
 function delete_data() {
     let data;
+    document.getElementById("title_form").value = 'notPOST';
     if (flag_replacement) {
         data = {
             'message': 'delete replacement',
