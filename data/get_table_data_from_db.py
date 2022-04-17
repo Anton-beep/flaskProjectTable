@@ -128,16 +128,25 @@ def table_data_for_admin(week):
                         if lesson.time == f'{iter}_{week_day}':
                             rep = replacement
                             break
-                if rep:
+                if rep and (
+                        week[0] < rep.end_date > week[1] or week[0] < rep.start_date > week[1]):
                     new_row += [('replacementText',
                                  f'ЗАМЕНА;{rep.grade};'
                                  f'{rep.topic};{rep.cabinet};')]
                 else:
-                    if len(lessons_iter) > 0 and db_sess.query(Replacement).filter(
-                            Replacement.lesson == lessons_iter[0].id).first() is None:
-                        new_row += [
-                            f'{lessons_iter[0].grade};{lessons_iter[0].topic};'
-                            f'{lessons_iter[0].cabinet}']
+                    if len(lessons_iter) > 0:
+                        flag_lesson = True
+                        replacements_lesson = db_sess.query(Replacement).filter(
+                            Replacement.lesson == lessons_iter[0].id)
+                        for rep in replacements_lesson:
+                            if week[0] <= rep.end_date >= week[1] or week[0] <= rep.start_date >= \
+                                    week[1]:
+                                flag_lesson = False
+                                break
+                        if flag_lesson:
+                            new_row += [
+                                f'{lessons_iter[0].grade};{lessons_iter[0].topic};'
+                                f'{lessons_iter[0].cabinet}']
                     else:
                         new_row += ['-']
             rows.append(new_row)

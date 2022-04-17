@@ -10,5 +10,4 @@ class RegisterAdminForm(FlaskForm):
     surname = StringField('Фамилия')
     name = StringField('Имя')
     patronymic = StringField('Отчество')
-    email = EmailField('Почта')
     submit = SubmitField('Зарегестрировать пользователя')

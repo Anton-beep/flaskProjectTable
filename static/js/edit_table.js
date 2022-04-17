@@ -7,7 +7,7 @@ function edit_cell(element) {
         $('#lesson_modal').modal();
         document.getElementById("teacher").disabled = false;
         document.getElementById("rep_teacher").hidden = false;
-    } else if (!flag_replacement) {
+    } else if (!flag_replacement && element.innerText.split(';')[0] !== 'ЗАМЕНА') {
         $('#lesson_modal').modal();
         document.getElementById("teacher").disabled = true;
         document.getElementById("rep_teacher").hidden = true;
@@ -56,16 +56,15 @@ function edit_flag_replacement(element) {
 function send_data(data) {
     let xhr = new XMLHttpRequest();
 
-    xhr.open("POST", '/', true);
+    xhr.open("POST", '/', false);
     xhr.setRequestHeader('Content-Type', 'application/json');
 
     xhr.send(JSON.stringify(data));
-    document.location.reload(true);
+    document.location.reload();
 }
 
 function delete_data() {
     let data;
-    document.getElementById("title_form").value = 'notPOST';
     if (flag_replacement) {
         data = {
             'message': 'delete replacement',
@@ -79,9 +78,6 @@ function delete_data() {
             'teacher': document.getElementById("teacher").value
         }
     }
-
-
-    console.log(data);
 
     send_data(data);
 }

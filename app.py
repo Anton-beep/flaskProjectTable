@@ -3,6 +3,7 @@
 import os
 import secrets
 import datetime
+import time
 
 from PIL import Image
 
@@ -49,11 +50,13 @@ api.add_resource(replacements_resources.ReplacementsResource,
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+post_hnd = datetime.datetime.now()
+
 
 @app.route('/', methods=['POST', 'GET'])
 def base():
     """view table"""
-    global NOW_DAY, TABLE_WEEK
+    global NOW_DAY, TABLE_WEEK, post_hnd
     rows = []
     header = []
     form = None
@@ -65,9 +68,9 @@ def base():
         form = EditLessonForm()
         if form.validate_on_submit() and user.access_level == 3 and form.title.data != 'notPOST':
             data = request.form
-            if data:
+            if data and (datetime.datetime.now() - post_hnd).seconds > 1:
                 if data['title'] == 'Изменение/Создание замены':
-                    # reaplacement
+                    # replacement
                     edit_write_replacement(data, form, TABLE_WEEK)
                 else:
                     # lesson
@@ -81,8 +84,9 @@ def base():
                 time_db = convert_table_text_to_time(data['time'])
                 lesson_to_del = db_sess.query(Lesson).filter(
                     and_(Lesson.time == time_db, Lesson.teacher == teacher.id)).first()
-                db_sess.delete(lesson_to_del)
-                db_sess.commit()
+                if lesson_to_del:
+                    db_sess.delete(lesson_to_del)
+                    db_sess.commit()
             elif data['message'] == 'delete replacement':
                 teacher = db_sess.query(User).filter(
                     User.name == data['teacher'].split()[1],
@@ -102,6 +106,8 @@ def base():
                 NOW_DAY = datetime.datetime.strptime(data['day'], '%Y-%m-%d')
                 TABLE_WEEK = get_week_from_day(NOW_DAY)
                 NOW_DAY = NOW_DAY.strftime('%Y-%m-%d')
+
+            post_hnd = datetime.datetime.now()
 
         if user.access_level == 1:
             header, rows = table_data_for_user(user.grade, TABLE_WEEK)
@@ -136,8 +142,6 @@ def users():
                 user_to_edit.name = form.name.data
             if form.patronymic.data != '':
                 user_to_edit.patronymic = form.patronymic.data
-            if form.email.data != '':
-                user_to_edit.email = form.email.data
             db_sess.add(user_to_edit)
             db_sess.commit()
 

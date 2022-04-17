@@ -34,13 +34,21 @@ def edit_write_replacement(data, form, table_week):
         User.surname == data['rep_teacher'].split()[0]).first()
     lesson_rep = db_sess.query(Lesson).filter(
         and_(Lesson.time == time_db, Lesson.teacher == teacher_old.id)).first()
-    replacement_to_edit = db_sess.query(Replacement).filter(
-        Replacement.lesson == lesson_rep.id).first()
+    lessons_time = db_sess.query(Lesson).filter(Lesson.time == time_db)
+    if lessons_time:
+        lessons_time_id = [element.id for element in lessons_time]
+        for lesson_id in lessons_time_id:
+            replacement_to_edit = db_sess.query(Replacement).filter(
+                and_(Replacement.teacher == teacher_old.id,
+                     Replacement.lesson == lesson_id)).first()
+            if replacement_to_edit:
+                break
 
     if replacement_to_edit:
         replacement_to_edit.topic = form.topic.data
         replacement_to_edit.grade = form.grade.data
         replacement_to_edit.cabinet = form.cabinet.data
+        replacement_to_edit.teacher = teacher.id
     else:
         replacement = Replacement()
         replacement.topic = form.topic.data
@@ -71,7 +79,7 @@ def edit_write_lesson(data, form):
     else:
         lesson = Lesson()
         lesson.topic = form.topic.data
-        lesson.grade = form.grade.data
+        lesson.grade = form.grade.data.upper()
         lesson.cabinet = form.cabinet.data
         lesson.time = time_db
         lesson.teacher = teacher.id

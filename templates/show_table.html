@@ -3,7 +3,6 @@
 {% block content %}
     {% if current_user.is_authenticated %}
         {% if current_user.access_level == 3 %}
-            <script src="/static/js/edit_table.js"></script>
             <!-- Modal -->
             <div class="modal fade" id="lesson_modal" tabindex="-1" role="dialog"
                  aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
@@ -61,12 +60,13 @@
         {% endif %}
 
         <p>
+            <script src="/static/js/edit_table.js"></script>
             <a class="btn btn-info" href="/statistic">Посмотреть статистику</a>
             <a class="btn btn-secondary" href="/download_table">Скачать расписание в файле
             </a>
             <label for="set_date"></label>
             <input type="date" id="set_date" name="trip-start" value="{{ now_day }}">
-            <a class="btn btn-outline-primary" onclick="change_week();">Изменить неделю
+            <a class="btn btn-outline-primary" onclick="change_week()">Изменить неделю
                 просмотра
             </a>
             <br>
