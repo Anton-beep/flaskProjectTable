@@ -4,7 +4,7 @@ import os
 import secrets
 import datetime
 
-import PIL
+from PIL import Image
 
 from flask import Flask, redirect, render_template, request, send_file
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
@@ -31,10 +31,6 @@ from data.edit_db_from_base import *
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'Church_Of_Saint_Floppa'
 db_session.global_init("db/timetable.db")
-
-# init.clear(True)
-# init.fill_table(admin=True, users=True, lessons=False, replacements=False)
-# init.add_random(True, 150, 40)
 
 api = Api(app)
 # users api
@@ -107,12 +103,12 @@ def base():
                 TABLE_WEEK = get_week_from_day(NOW_DAY)
                 NOW_DAY = NOW_DAY.strftime('%Y-%m-%d')
 
-    if user.access_level == 1:
-        header, rows = table_data_for_user(user.grade, TABLE_WEEK)
-    elif user.access_level == 2:
-        header, rows = table_data_for_teacher(user.id, TABLE_WEEK)
-    elif user.access_level == 3:
-        header, rows = table_data_for_admin(TABLE_WEEK)
+        if user.access_level == 1:
+            header, rows = table_data_for_user(user.grade, TABLE_WEEK)
+        elif user.access_level == 2:
+            header, rows = table_data_for_teacher(user.id, TABLE_WEEK)
+        elif user.access_level == 3:
+            header, rows = table_data_for_admin(TABLE_WEEK)
 
     return render_template("show_table.html", rows=rows, header=header, form=form,
                            form_replacement=form_replacement, now_day=NOW_DAY)
@@ -325,10 +321,10 @@ def show_statistic():
 
     if request.method == 'POST':
         interval = request.form['interval']
-    param = analyze.analyze(interval, current_user.grade,
-                            current_user.access_level, current_user.id)
+
     try:
-        pass
+        param = analyze.analyze(interval, current_user.grade,
+                                current_user.access_level, current_user.id)
     except Exception as er:
         print(er)
         return render_template('statistic.html', title="Статистика", interval=interval,
@@ -371,7 +367,7 @@ def token_check():
         db_sess = db_session.create_session()
         user = db_sess.query(User).filter(User.token == form.token.data).first()
         if user:
-            if user.email is None:
+            if user.hashed_password is None:
                 return redirect(f"/register/{form.token.data}")
             return redirect(f"/login/{form.token.data}")
         return render_template('token_check.html',
@@ -449,7 +445,7 @@ def register(token):
             file.save('static/img/' + secure_filename(file.filename))
 
             fixed_width = 200
-            img = PIL.Image.open('static/img/' + secure_filename(file.filename))
+            img = Image.open('static/img/' + secure_filename(file.filename))
             width_percent = (fixed_width / float(img.size[0]))
             height_size = int((float(img.size[0]) * float(width_percent)))
             new_image = img.resize((fixed_width, height_size))
@@ -526,7 +522,7 @@ def user_edit(id):
                 file.save('static/img/' + secure_filename(file.filename))
 
                 fixed_width = 200
-                img = PIL.Image.open('static/img/' + secure_filename(file.filename))
+                img = Image.open('static/img/' + secure_filename(file.filename))
                 width_percent = (fixed_width / float(img.size[0]))
                 height_size = int((float(img.size[0]) * float(width_percent)))
                 new_image = img.resize((fixed_width, height_size))

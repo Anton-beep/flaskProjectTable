@@ -39,7 +39,7 @@
 
             function drawChart() {
                 var jsonData = $.ajax({
-                    url: "static/chart/PieChart.json",
+                    url: "static/PieChart.json",
                     dataType: "json",
                     async: false
                 }).responseText;
@@ -68,7 +68,7 @@
             function drawVisualization() {
                 // Some raw data (not necessarily accurate)
                 var jsonData = $.ajax({
-                    url: "static/chart/ComboChart.json",
+                    url: "static/ComboChart.json",
                     dataType: "json",
                     async: false
                 }).responseText;
@@ -100,7 +100,7 @@
 
                     function drawChart() {
                         var jsonData = $.ajax({
-                            url: "static/chart/BarChart.json",
+                            url: "static/BarChart.json",
                             dataType: "json",
                             async: false
                         }).responseText;
@@ -140,7 +140,7 @@
 
                     function drawChart() {
                         var jsonData = $.ajax({
-                            url: "static/chart/AreaChart.json",
+                            url: "static/AreaChart.json",
                             dataType: "json",
                             async: false
                         }).responseText;

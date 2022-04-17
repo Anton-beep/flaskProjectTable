@@ -14,7 +14,7 @@ def pie_chart(param):
         diction["rows"].append(
             {"c": [{"v": key, "f": None}, {"v": item, "f": None}]}
         )
-    d = os.path.join(os.path.join(os.getcwd(), 'static'), 'chart')
+    d = os.path.join(os.getcwd(), 'static')
     json.dump(diction, open(os.path.join(d, 'PieChart.json'), 'w'))
 
 
@@ -40,7 +40,7 @@ def combo_chart(param):
         row[1]["v"] = round(sum(average) / len(average), 1)
         diction["rows"].append({"c": row})
 
-    d = os.path.join(os.path.join(os.getcwd(), 'static'), 'chart')
+    d = os.path.join(os.getcwd(), 'static')
     json.dump(diction, open(os.path.join(d, 'ComboChart.json'), 'w'))
 
 
@@ -60,7 +60,7 @@ def bar_chart(param):
         diction["rows"][0]["c"].append({"v": item["replace"], "f": None})
         diction["rows"][1]["c"].append({"v": item["replaced"], "f": None})
 
-    d = os.path.join(os.path.join(os.getcwd(), 'static'), 'chart')
+    d = os.path.join(os.getcwd(), 'static')
     json.dump(diction, open(os.path.join(d, 'BarChart.json'), 'w'))
 
 
@@ -89,7 +89,7 @@ def area_chart(param):
         ret["replace"] += rep["replace"]
         ret["replaced"] += rep["replaced"]
 
-    d = os.path.join(os.path.join(os.getcwd(), 'static'), 'chart')
+    d = os.path.join(os.getcwd(), 'static')
     json.dump(diction, open(os.path.join(d, 'AreaChart.json'), 'w'))
 
     return ret

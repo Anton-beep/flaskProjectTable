@@ -23,6 +23,7 @@ def analyze(interval, grade, level, user_id):
             if type(les) == Lesson:
                 start = min(start, int(les.time.split('_')[0]))
                 end = max(end, int(les.time.split('_')[0]))
+    assert type(start) == type(end) == int
     param = {
         "start": reader[start][0], "end": reader[end][1],
         "duration_total": int(duration.split(':')[1]) * (end - start + 1),
