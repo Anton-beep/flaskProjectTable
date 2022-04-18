@@ -6,7 +6,7 @@ function edit_cell(element) {
         $('#lesson_modal').modal();
         document.getElementById("teacher").disabled = false;
         document.getElementById("rep_teacher").hidden = false;
-    } else if (!flag_replacement && element.innerText.split(';')[0] !== 'ЗАМЕНА') {
+    } else if (!flag_replacement && element.innerText.split(' ')[0] !== 'ЗАМЕНА') {
         $('#lesson_modal').modal();
         document.getElementById("teacher").disabled = true;
         document.getElementById("rep_teacher").hidden = true;
@@ -19,14 +19,14 @@ function edit_cell(element) {
     document.getElementById("rep_teacher").value = teacher;
     document.getElementById("time").value = time;
     if (flag_replacement) {
-        if (element.innerText.split(';')[0] === 'ЗАМЕНА') {
+        if (element.innerText.split(' ')[0] === 'ЗАМЕНА') {
             replacement_num = 1
         } else {
             replacement_num = 0
         }
         document.getElementById("title_form").value = "Изменение/Создание замены";
     } else {
-        if (element.innerText.split(';')[0] === 'ЗАМЕНА') {
+        if (element.innerText.split(' ')[0] === 'ЗАМЕНА') {
             replacement_num = 1
             document.getElementById("title_form").value = "Изменение замены на урок";
         } else {
@@ -35,9 +35,9 @@ function edit_cell(element) {
         }
     }
     if (element.innerText.length > 2) {
-        let grade = element.innerText.split(';')[replacement_num];
-        let topic = element.innerText.split(';')[1 + replacement_num];
-        let cabinet = element.innerText.split(';')[2 + replacement_num];
+        let grade = element.innerText.split(' ')[replacement_num];
+        let topic = element.innerText.split(' ')[1 + replacement_num];
+        let cabinet = element.innerText.split(' ')[2 + replacement_num];
         document.getElementById("grade").value = grade;
         document.getElementById("topic").value = topic;
         document.getElementById("cabinet").value = cabinet;

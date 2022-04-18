@@ -19,8 +19,55 @@ table {
     width: 600px;
 }
 
-.replacementText {
+body {
+    background-color: #fffff0;
+}
+.userImg {
+    border-radius:50%;
+}
+
+* {
+    font-family: 'Comfortaa', cursive;
+}
+
+.textFont {
+    font-family: 'Comfortaa', cursive;
+}
+
+.textFont.Bold {
+    font-weight: bold;
+}
+
+.textFont.SuperBold {
+    font-weight: 900;
+}
+
+.textFont.Bold.BackYel {
+    background-color: LightYellow;
+}
+
+.textFont.Bold.BackGold {
+    background-color: LightGoldenRodYellow;
+}
+
+.cellText {
+    font-family: 'Comfortaa', cursive;
+}
+
+.cellText:hover {
+    background-color: LightGrey;
+}
+
+.btn {
+    font-family: 'Comfortaa', cursive;
+}
+
+.cellText.replacementText {
     background-color: orange;
+}
+
+.cellText.replacementText:hover {
+    background-color: OrangeRed;
 }
 
 .hide_element {

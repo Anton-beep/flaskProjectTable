@@ -10,6 +10,10 @@
     <title>{{ title }}</title>
     <link rel="stylesheet" type="text/css"
           href="{{ url_for('static', filename='css/style.css') }}"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap"
+          rel="stylesheet">
 </head>
 <body>
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
@@ -21,19 +25,20 @@
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js"
         integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
         crossorigin="anonymous"></script>
-<h1>Flask Project Table</h1>
+<h1 class="textFont SuperBold">Flask Project Table</h1>
 <nav>
     {% if current_user.is_authenticated %}
-        {{ current_user.name }}
-        <img style="margin-left: 50px;" src="{{ current_user.image }}" alt="А где" width=50
-             height=50>
-        <p>
-            <a class="btn btn-warning" href="/user_edit/{{ current_user.id }}">Редактировать
-                профиль</a>
-        </p>
-        <p>
-            <a class="btn btn-danger" href="/logout">Выйти</a>
-        </p>
+        <div class="textFont">{{ current_user.name }}
+            <img class="userImg" style="margin-left: 50px;" src="{{ current_user.image }}"
+                 alt="А где" width=50 height=50>
+            <p>
+                <a class="btn btn-warning" href="/user_edit/{{ current_user.id }}">Редактировать
+                    профиль</a>
+            </p>
+            <p>
+                <a class="btn btn-danger" href="/logout">Выйти</a>
+            </p>
+        </div>
     {% else %}
         <p>
             <a class="btn btn-success" href="/token">Войти</a>

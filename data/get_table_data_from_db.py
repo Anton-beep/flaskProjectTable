@@ -136,8 +136,8 @@ def table_data_for_admin(week):
                             break
                 if rep and rep_in_week(rep.start_date, rep.end_date, week[0], week[1]):
                     new_row += [('replacementText',
-                                 f'ЗАМЕНА;{rep.grade};'
-                                 f'{rep.topic};{rep.cabinet};')]
+                                 f'ЗАМЕНА {rep.grade} '
+                                 f'{rep.topic} {rep.cabinet}')]
                 else:
                     if len(lessons_iter) > 0:
                         flag_lesson = True
@@ -149,7 +149,7 @@ def table_data_for_admin(week):
                                 break
                         if flag_lesson:
                             new_row += [
-                                f'{lessons_iter[0].grade};{lessons_iter[0].topic};'
+                                f'{lessons_iter[0].grade} {lessons_iter[0].topic} '
                                 f'{lessons_iter[0].cabinet}']
                     else:
                         new_row += ['-']

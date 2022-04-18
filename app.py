@@ -75,37 +75,39 @@ def base():
                 else:
                     # lesson
                     edit_write_lesson(data, form)
-        elif request.method == 'POST' and user.access_level == 3:
+        elif request.method == 'POST':
             data = request.json
-            if data['message'] == 'delete lesson':
-                teacher = db_sess.query(User).filter(
-                    User.name == data['teacher'].split()[1],
-                    User.surname == data['teacher'].split()[0]).first()
-                time_db = convert_table_text_to_time(data['time'])
-                lesson_to_del = db_sess.query(Lesson).filter(
-                    and_(Lesson.time == time_db, Lesson.teacher == teacher.id)).first()
-                if lesson_to_del:
-                    db_sess.delete(lesson_to_del)
-                    db_sess.commit()
-            elif data['message'] == 'delete replacement':
-                teacher = db_sess.query(User).filter(
-                    User.name == data['teacher'].split()[1],
-                    User.surname == data['teacher'].split()[0]).first()
-                time_db = convert_table_text_to_time(data['time'])
-                lessons_time = list(db_sess.query(Lesson).filter(Lesson.time == time_db))
-
-                for lesson in lessons_time:
-                    rep_to_del = db_sess.query(Replacement).filter(
-                        and_(Replacement.lesson == lesson.id,
-                             Replacement.teacher == teacher.id)).first()
-                    if rep_to_del:
-                        db_sess.delete(rep_to_del)
-                        db_sess.commit()
-                        break
-            elif data['message'] == 'new week':
+            if data['message'] == 'new week':
                 NOW_DAY = datetime.datetime.strptime(data['day'], '%Y-%m-%d')
                 TABLE_WEEK = get_week_from_day(NOW_DAY)
                 NOW_DAY = NOW_DAY.strftime('%Y-%m-%d')
+            else:
+                if user.access_level == 3:
+                    if data['message'] == 'delete lesson':
+                        teacher = db_sess.query(User).filter(
+                            User.name == data['teacher'].split()[1],
+                            User.surname == data['teacher'].split()[0]).first()
+                        time_db = convert_table_text_to_time(data['time'])
+                        lesson_to_del = db_sess.query(Lesson).filter(
+                            and_(Lesson.time == time_db, Lesson.teacher == teacher.id)).first()
+                        if lesson_to_del:
+                            db_sess.delete(lesson_to_del)
+                            db_sess.commit()
+                    elif data['message'] == 'delete replacement':
+                        teacher = db_sess.query(User).filter(
+                            User.name == data['teacher'].split()[1],
+                            User.surname == data['teacher'].split()[0]).first()
+                        time_db = convert_table_text_to_time(data['time'])
+                        lessons_time = list(db_sess.query(Lesson).filter(Lesson.time == time_db))
+
+                        for lesson in lessons_time:
+                            rep_to_del = db_sess.query(Replacement).filter(
+                                and_(Replacement.lesson == lesson.id,
+                                     Replacement.teacher == teacher.id)).first()
+                            if rep_to_del:
+                                db_sess.delete(rep_to_del)
+                                db_sess.commit()
+                                break
 
             post_hnd = datetime.datetime.now()
 
