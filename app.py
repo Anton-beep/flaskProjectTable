@@ -194,11 +194,13 @@ def get_week_from_day(day):
     week_num = day.weekday()
     start_week_day = day - datetime.timedelta(days=week_num)
     end_week_day = start_week_day + datetime.timedelta(days=6)
+    print(start_week_day, end_week_day)
     return start_week_day, end_week_day
 
 
 NOW_DAY = datetime.datetime.today().strftime('%Y-%m-%d')
-TABLE_WEEK = get_week_from_day(datetime.datetime.today())
+TABLE_WEEK = get_week_from_day(
+    datetime.datetime.today().replace(hour=0, minute=0, second=0, microsecond=0))
 
 
 @app.route('/register', methods=['POST', 'GET'])
@@ -214,31 +216,21 @@ def admin_register():
                 # check new user in db
                 set_users = set(db_sess.query(User))
                 if form.grade.data:
-                    grade_users = db_sess.query(User).filter(User.grade == form.grade.data)
-                    if grade_users:
-                        set_users = set(grade_users) & set_users
+                    grade_users = list(db_sess.query(User).filter(User.grade == form.grade.data))
+                    set_users = set(grade_users) & set_users
                 if form.surname.data:
-                    surname_users = db_sess.query(User).filter(
-                        User.grade == form.surname.data)
-                    if surname_users:
-                        set_users = set(surname_users) & set_users
+                    surname_users = list(db_sess.query(User).filter(
+                        User.surname == form.surname.data))
+                    set_users = set(surname_users) & set_users
                 if form.name.data:
-                    name_users = db_sess.query(User).filter(User.name == form.name.data)
-                    if name_users:
-                        set_users = set(name_users) & set_users
+                    name_users = list(db_sess.query(User).filter(User.name == form.name.data))
+                    set_users = set(name_users) & set_users
                 if form.patronymic.data:
-                    patronymic_users = db_sess.query(User).filter(
-                        User.patronymic == form.patronymic.data)
-                    if patronymic_users:
-                        set_users = set(patronymic_users) & set_users
-                if form.email.data:
-                    email_users = set(db_sess.query(User).filter(User.email == form.email.data))
-                    if email_users:
-                        set_users = set(email_users) & set_users
+                    patronymic_users = list(db_sess.query(User).filter(
+                        User.patronymic == form.patronymic.data))
+                    set_users = set(patronymic_users) & set_users
                 if len(set_users) > 0:
                     message = 'Такой пользователь уже есть'
-                elif form.email.data and email_users:
-                    message = 'Пользователь с такой же почтой уже существует'
                 else:
                     # generate token for new user and write in db
 
@@ -251,8 +243,6 @@ def admin_register():
                         user.patronymic = form.patronymic.data
                     if form.grade.data:
                         user.grade = form.grade.data
-                    if form.email.data:
-                        user.email = form.email.data
                     user.access_level = form.access_level.data
 
                     token = secrets.token_urlsafe(32)
@@ -533,7 +523,11 @@ def user_edit(id):
                 new_image.save('static/img/' + secure_filename(file.filename))
 
                 if user.image.split('/')[-1] != 'default.png':
-                    os.remove(user.image[1:])
+                    try:
+                        os.remove(user.image[1:])
+                    except FileNotFoundError:
+                        # по какой-то причине, старой пикчи нет
+                        pass
                 user.image = '/static/img/' + secure_filename(file.filename)
             db_sess.commit()
             return redirect('/')

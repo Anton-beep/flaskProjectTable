@@ -1,5 +1,4 @@
 let flag_replacement = false;
-let replacement_dateTime;
 
 function edit_cell(element) {
     let replacement_num;

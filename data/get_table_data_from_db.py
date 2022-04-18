@@ -6,6 +6,12 @@ from data.models.users import User
 from data.sqlalchemy import db_session
 
 
+def rep_in_week(rep_start, rep_end, week_start, week_end):
+    if rep_start <= week_end and rep_end >= week_start:
+        return True
+    return False
+
+
 def table_data_for_user(grade, week) -> tuple:
     """returns header and rows"""
     header = ['Номер урока', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
@@ -128,8 +134,7 @@ def table_data_for_admin(week):
                         if lesson.time == f'{iter}_{week_day}':
                             rep = replacement
                             break
-                if rep and (
-                        week[0] < rep.end_date > week[1] or week[0] < rep.start_date > week[1]):
+                if rep and rep_in_week(rep.start_date, rep.end_date, week[0], week[1]):
                     new_row += [('replacementText',
                                  f'ЗАМЕНА;{rep.grade};'
                                  f'{rep.topic};{rep.cabinet};')]
@@ -139,8 +144,7 @@ def table_data_for_admin(week):
                         replacements_lesson = db_sess.query(Replacement).filter(
                             Replacement.lesson == lessons_iter[0].id)
                         for rep in replacements_lesson:
-                            if week[0] <= rep.end_date >= week[1] or week[0] <= rep.start_date >= \
-                                    week[1]:
+                            if rep_in_week(rep.start_date, rep.end_date, week[0], week[1]):
                                 flag_lesson = False
                                 break
                         if flag_lesson:
