@@ -31,14 +31,24 @@
         <div class="textFont">{{ current_user.name }}
             <img class="userImg" style="margin-left: 50px;" src="{{ current_user.image }}"
                  alt="А где" width=50 height=50>
-            <p>
-                <a class="btn btn-warning" href="/user_edit/{{ current_user.id }}">Редактировать
-                    профиль</a>
-            </p>
-            <p>
-                <a class="btn btn-danger" href="/logout">Выйти</a>
-            </p>
-        </div>
+            <a class="btn btn-warning" href="/user_edit/{{ current_user.id }}">Редактировать
+                профиль</a>
+            <a class="btn btn-danger" href="/logout">Выйти</a>
+            <a class="btn btn-info" href="/">На главную страницу
+            </a>
+            {% if current_user.access_level == 3 %}
+                <a class="btn btn-outline-primary" href="/users">Просмотр и редактирвоание всех
+                    пользователей
+                </a>
+                <a class="btn btn-outline-primary" href="/register">Заргестрировать нового
+                    пользователя
+                </a>
+                </div>
+            {% else %}
+            {% endif %}
+        <br>
+        <br>
+        <br>
     {% else %}
         <p>
             <a class="btn btn-success" href="/token">Войти</a>

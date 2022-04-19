@@ -1,5 +1,5 @@
 """main"""
-
+import io
 import os
 import secrets
 import datetime
@@ -275,7 +275,7 @@ def download_table():
             header = None
             rows = None
 
-        workbook = xlsxwriter.Workbook('test.xlsx')
+        workbook = xlsxwriter.Workbook(f'{datetime.datetime.now().strftime("%d_%m_%y")}.xlsx')
         worksheet = workbook.add_worksheet()
 
         rows = [header] + rows
@@ -292,7 +292,14 @@ def download_table():
                     worksheet.set_column(i, j, 20)
         workbook.close()
 
-        return send_file('test.xlsx')
+        file_data = io.BytesIO()
+        with open(f'{datetime.datetime.now().strftime("%d_%m_%y")}.xlsx', 'rb') as file:
+            file_data.write(file.read())
+        file_data.seek(0)
+
+        os.remove(f'{datetime.datetime.now().strftime("%d_%m_%y")}.xlsx')
+        return send_file(file_data, mimetype='application/xlsx',
+                         attachment_filename=f'{datetime.datetime.now().strftime("%d_%m_%y")}.xlsx')
     abort(404)
 
 
