@@ -3,12 +3,11 @@ import io
 import os
 import secrets
 import datetime
-import time
 from random import choice
 
 from PIL import Image
 
-from flask import Flask, redirect, render_template, request, send_file
+from flask import Flask, redirect, render_template, request, send_file, make_response
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_restful import abort, Api
 from flask_limiter import Limiter
@@ -89,9 +88,13 @@ def base():
         elif request.method == 'POST':
             data = request.json
             if data['message'] == 'new week':
+                res = make_response('/')
                 NOW_DAY = datetime.datetime.strptime(data['day'], '%Y-%m-%d')
                 TABLE_WEEK = get_week_from_day(NOW_DAY)
+                res.set_cookie('day', str(datetime.datetime.strptime(data['day'], '%Y-%m-%d')),
+                               max_age=60 * 60 * 24 * 365 * 2)
                 NOW_DAY = NOW_DAY.strftime('%Y-%m-%d')
+                return res
             else:
                 if user.access_level == 3:
                     if data['message'] == 'delete lesson':
@@ -121,6 +124,20 @@ def base():
                                 break
 
             post_hnd = datetime.datetime.now()
+
+        # get week from cookie
+        if request.cookies.get('day'):
+            NOW_DAY = datetime.datetime.strptime(request.cookies.get('day'),
+                                                 '%Y-%m-%d %H:%M:%S')
+            TABLE_WEEK = get_week_from_day(NOW_DAY)
+            NOW_DAY = NOW_DAY.strftime('%Y-%m-%d')
+        else:
+            # create cookie
+            res = make_response('/')
+            res.set_cookie('day', str(datetime.datetime.now()), max_age=60 * 60 * 24 * 365 * 2)
+            # TABLE_WEEK = get_week_from_day(datetime.datetime.strptime(request.cookies.get('day'),
+            #                                                           '%Y-%m-%d %H:%M:%S.%f'))
+            return res
 
         if user.access_level == 1:
             header, rows = table_data_for_user(user.grade, TABLE_WEEK)
@@ -222,9 +239,9 @@ def get_week_from_day(day):
     return start_week_day, end_week_day
 
 
-NOW_DAY = datetime.datetime.today().strftime('%Y-%m-%d')
-TABLE_WEEK = get_week_from_day(
-    datetime.datetime.today().replace(hour=0, minute=0, second=0, microsecond=0))
+# NOW_DAY = datetime.datetime.today().strftime('%Y-%m-%d')
+# TABLE_WEEK = get_week_from_day(
+#     datetime.datetime.today().replace(hour=0, minute=0, second=0, microsecond=0))
 
 
 @app.route('/register', methods=['POST', 'GET'])
