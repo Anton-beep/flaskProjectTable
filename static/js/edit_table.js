@@ -10,6 +10,8 @@ function edit_cell(element) {
         $('#lesson_modal').modal();
         document.getElementById("teacher").disabled = true;
         document.getElementById("rep_teacher").hidden = true;
+    } else {
+        document.getElementById("tipWindow").className = "tipWindow appearElement"
     }
 
     let teacher = document.getElementById("header_" + element.id.split('_')[0]).innerText;

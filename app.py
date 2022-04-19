@@ -196,7 +196,6 @@ def get_week_from_day(day):
     week_num = day.weekday()
     start_week_day = day - datetime.timedelta(days=week_num)
     end_week_day = start_week_day + datetime.timedelta(days=6)
-    print(start_week_day, end_week_day)
     return start_week_day, end_week_day
 
 
@@ -329,7 +328,7 @@ def show_statistic():
         param = analyze.analyze(interval, current_user.grade,
                                 current_user.access_level, current_user.id)
     except Exception as er:
-        print(er)
+        # print(er)
         return render_template('statistic.html', title="Статистика", interval=interval,
                                error="Уроков нет на данном промежутке")
 
@@ -420,7 +419,6 @@ def register(token):
         form.name.data = user.name
         form.patronymic.data = user.patronymic
         image_path = user.image
-        print(image_path)
     if form.validate_on_submit():
         if db_sess.query(User).filter(User.token == form.token.data).first().email is not None:
             return render_template('register.html', title='Регистрация',

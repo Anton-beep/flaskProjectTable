@@ -75,8 +75,9 @@
                 <div class="custom-control custom-switch">
                     <input class="custom-control-input" type="checkbox" id="flexCheckDefault"
                            onclick="edit_flag_replacement(this)">
-                    <label class="custom-control-label" for="flexCheckDefault" id="submit_button">
-                        Редактирование замен</label>
+                    <label class="custom-control-label" for="flexCheckDefault" id="submit_button">Редактирование
+                        замен</label>
+                    <div class="tipWindow hideElement" id="tipWindow">bib</div>
                 </div>
             {% endif %}
         </p>
@@ -85,7 +86,8 @@
             <thead>
             <tr>
                 {% for text in header %}
-                    <th class="textFont Bold BackYel" scope="col" id="header_{{ loop.index }}">{{ text }}</th>
+                    <th class="textFont Bold BackYel" scope="col"
+                        id="header_{{ loop.index }}">{{ text }}</th>
                 {% endfor %}
             </tr>
             </thead>
@@ -96,7 +98,8 @@
                 <tr>
                     {% for text in row %}
                         {% if loop.index == 1 %}
-                            <th class="textFont Bold BackGold" scope="row" id="row_{{ row_count }}">{{ text }}</th>
+                            <th class="textFont Bold BackGold" scope="row"
+                                id="row_{{ row_count }}">{{ text }}</th>
                         {% else %}
                             {% if text[0] == 'replacementText' %}
                                 <td class="cellText replacementText"
