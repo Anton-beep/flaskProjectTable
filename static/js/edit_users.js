@@ -6,7 +6,6 @@ function edit_user(element) {
         "surname",
         "patronymic",
         "grade",
-        "email",
         "access_level",
         "token"
     ]

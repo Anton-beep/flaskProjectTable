@@ -4,6 +4,7 @@ import os
 import secrets
 import datetime
 import time
+from random import choice
 
 from PIL import Image
 
@@ -35,7 +36,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'Church_Of_Saint_Floppa'
 db_session.global_init("db/timetable.db")
 
-limiter = Limiter(app, key_func=get_remote_address, default_limits=['1 per second'])
+limiter = Limiter(app, key_func=get_remote_address, default_limits=['2 per second', '300 per hour'])
 
 api = Api(app)
 # users api
@@ -55,6 +56,12 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 post_hnd = datetime.datetime.now()
+
+
+@app.errorhandler(429)
+def too_many_requests(e):
+    return render_template('too_many_requests.html',
+                           img='/static/img/ddos/' + choice(os.listdir('static/img/ddos')))
 
 
 @app.route('/', methods=['POST', 'GET'])

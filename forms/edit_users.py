@@ -11,6 +11,5 @@ class EditUsersForm(FlaskForm):
     surname = StringField('Фамилия')
     name = StringField('Имя')
     patronymic = StringField('Отчество')
-    email = EmailField('Почта')
     password = PasswordField('Пароль')
     submit = SubmitField('Сохранить')
