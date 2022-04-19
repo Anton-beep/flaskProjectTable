@@ -10,6 +10,8 @@ from PIL import Image
 from flask import Flask, redirect, render_template, request, send_file
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_restful import abort, Api
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from sqlalchemy import and_
 from werkzeug.utils import secure_filename
 import xlsxwriter
@@ -32,6 +34,8 @@ from data.edit_db_from_base import *
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'Church_Of_Saint_Floppa'
 db_session.global_init("db/timetable.db")
+
+limiter = Limiter(app, key_func=get_remote_address, default_limits=['1 per second'])
 
 api = Api(app)
 # users api
@@ -134,16 +138,28 @@ def users():
             user_to_edit = db_sess.query(User).filter(User.id == int(form.id.data)).first()
             if form.token.data != '':
                 user_to_edit.token = form.token.data
+            else:
+                user_to_edit.token = None
             if form.grade.data != '':
                 user_to_edit.grade = form.grade.data
+            else:
+                user_to_edit.grade = None
             if form.access_level.data != '':
                 user_to_edit.access_level = form.access_level.data
+            else:
+                user_to_edit.access_level = None
             if form.surname.data != '':
                 user_to_edit.surname = form.surname.data
+            else:
+                user_to_edit.surname = None
             if form.name.data != '':
                 user_to_edit.name = form.name.data
+            else:
+                user_to_edit.name = None
             if form.patronymic.data != '':
                 user_to_edit.patronymic = form.patronymic.data
+            else:
+                user_to_edit.patronymic = None
             db_sess.add(user_to_edit)
             db_sess.commit()
 
