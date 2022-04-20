@@ -58,7 +58,11 @@ def add_replacements(lessons, grade, level, user_id, interval):
     db_sess = db_session.create_session()
     if level == 2:
         rep = db_sess.query(Replacement).filter(Replacement.teacher == user_id).all()
-        lessons.extend(rep)
+        for r in rep:
+            if r.start_date.day == datetime.datetime.now().day and interval == 'day':
+                lessons.append(r)
+            elif interval == "week":
+                lessons.append(r)
 
         to_dell = []
         for i, item in enumerate(lessons):
@@ -150,4 +154,7 @@ def edit_chart(lessons, param, level, user_id, interval):
 
 
 def full_name(user):
-    return ' '.join([user.surname, user.name, user.patronymic])
+    surname = user.surname if user.surname is not None else ''
+    name = user.name if user.name is not None else ''
+    patronymic = user.patronymic if user.patronymic is not None else ''
+    return ' '.join([surname, name, patronymic])
