@@ -72,6 +72,7 @@ def base():
     form = None
     form_replacement = None
 
+    NOW_DAY = None
     if current_user.is_authenticated:
         db_sess = db_session.create_session()
         user = db_sess.query(User).filter(User.id == current_user.id).first()
@@ -133,8 +134,9 @@ def base():
             NOW_DAY = NOW_DAY.strftime('%Y-%m-%d')
         else:
             # create cookie
-            res = make_response('/')
-            res.set_cookie('day', str(datetime.datetime.now()), max_age=60 * 60 * 24 * 365 * 2)
+            res = make_response(redirect('/'))
+            res.set_cookie('day', str(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')),
+                           max_age=60 * 60 * 24 * 365 * 2)
             # TABLE_WEEK = get_week_from_day(datetime.datetime.strptime(request.cookies.get('day'),
             #                                                           '%Y-%m-%d %H:%M:%S.%f'))
             return res
