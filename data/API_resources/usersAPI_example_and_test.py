@@ -2,7 +2,7 @@ import requests
 from pprint import pprint
 
 API_KEY_JSON = {
-    "api-key": "admin"
+    "api-key": "sAUNyCvDMHKbdchgL9r2JieHQv4VlgtlWPGHWYMFhfY"
 }
 
 # GET all data about users
@@ -21,7 +21,7 @@ print('POST NEW USER' + '_' * 50)
 
 print('NEW USER DATA')
 NEW_USER = {
-    "api-key": "admin",
+    "api-key": "sAUNyCvDMHKbdchgL9r2JieHQv4VlgtlWPGHWYMFhfY",
     "id": 900,
     "access_level": 1,
     "email": "bib@bob.com",

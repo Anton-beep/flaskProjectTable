@@ -6,6 +6,7 @@ function edit_user(element) {
         "surname",
         "patronymic",
         "grade",
+        "IGNORE",
         "access_level",
         "token"
     ]
@@ -13,10 +14,13 @@ function edit_user(element) {
     document.getElementById("id_form").value = row.toString();
 
     for (let i = 0; i < row_data.length; i++) {
-        if (document.getElementById("cell" + (i + 2).toString() + "_" + row).innerText !== "-") {
-            document.getElementById(row_data[i]).value = document.getElementById("cell" + (i + 2).toString() + "_" + row).innerText;
-        } else {
-            document.getElementById(row_data[i]).value = ""
+        if (row_data[i] !== "IGNORE") {
+            if (document.getElementById("cell" + (i + 2).toString() + "_" + row).innerText !== "-") {
+                document.getElementById(row_data[i]).value = document.getElementById("cell" + (i + 2).toString() + "_" + row).innerText;
+                console.log(document.getElementById("cell" + (i + 2).toString() + "_" + row).innerText, row_data[i]);
+            } else {
+                document.getElementById(row_data[i]).value = ""
+            }
         }
     }
     $('#user_edit_modal').modal();

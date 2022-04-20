@@ -57,6 +57,11 @@ login_manager.init_app(app)
 post_hnd = datetime.datetime.now()
 
 
+@app.errorhandler(500)
+def server_error(e):
+    return redirect('/')
+
+
 @app.errorhandler(429)
 def too_many_requests(e):
     return render_template('too_many_requests.html',
