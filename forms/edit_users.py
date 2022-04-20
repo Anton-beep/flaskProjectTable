@@ -7,7 +7,7 @@ class EditUsersForm(FlaskForm):
     id = StringField('id')
     token = StringField('Токен')
     grade = StringField('Класс')
-    access_level = SelectField('Уровень доступа', choices=[(3, 3), (2, 2), (1, 1)])
+    access_level = SelectField('Уровень доступа', choices=[(3, 3), (2, 2), (1, 1)], default=1)
     surname = StringField('Фамилия')
     name = StringField('Имя')
     patronymic = StringField('Отчество')

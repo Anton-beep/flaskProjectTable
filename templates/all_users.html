@@ -74,7 +74,7 @@
         <thead>
         <tr>
             {% for text in header %}
-                <th scope="col" id="header_{{ loop.index }}">{{ text }}</th>
+                <th class="textFont Bold BackYel" scope="col" id="header_{{ loop.index }}">{{ text }}</th>
             {% endfor %}
         </tr>
         </thead>
@@ -86,7 +86,7 @@
             <tr>
                 {% for text in row %}
                     {% if loop.index == 1 %}
-                        <th scope="row" id="row_{{ row_count }}">{{ text }}</th>
+                        <th class="textFont Bold BackGold" scope="row" id="row_{{ row_count }}">{{ text }}</th>
                     {% else %}
                         <td onclick="edit_user(this);"
                             id="cell{{ loop.index }}_{{ row_count }}">{{ text }}</td>
