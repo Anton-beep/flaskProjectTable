@@ -388,7 +388,7 @@ def show_statistic():
             replacements = GoogleCharts.area_chart(param)
     except Exception:
         return render_template('statistic.html', title="Статистика", interval=interval,
-                               error_rep="Замен нет на данном промежутке нет", error=None)
+                               error_rep="Замен нет на данном промежутке нет", error=None, **param)
     return render_template('statistic.html', title="Статистика", interval=interval,
                            error=None, error_rep=None, replacements=replacements, **param)
 
